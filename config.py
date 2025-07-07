@@ -1,13 +1,12 @@
 # === Configurações Gerais ===
 SSID = "WIFI-SSID"  # Nome da rede Wi-Fi
 SENHA = "WIFI-PW"  # Senha da rede Wi-Fi
-#SENHA = "paodebatata" # Outra senha de exemplo
 
 # === API/Zabbix ===
 # API_URL = "http://149.28.230.181/adapter/resources/95d80ef9-3670-4f50-a386-bbf6a9329de4/data"  # URL da API (antigo)
-ZABBIX_SERVER = "endereco_do_servidor_zabbix"  # IP ou hostname do servidor Zabbix
+ZABBIX_SERVER = "http://zbv.1n0v.tech"  # IP ou hostname do servidor Zabbix
 ZABBIX_PORT = 10051  # Porta padrão do Zabbix sender
-ZABBIX_HOST = "PicoW_SensorStation" # Nome do host no Zabbix para este dispositivo
+ZABBIX_HOST = "SmartLago" # Nome do host no Zabbix para este dispositivo
 
 # === Intervalos ===
 INTERVALO_LOOP_PRINCIPAL = 30  # Tempo entre ciclos de leitura/envio (segundos)
@@ -50,7 +49,7 @@ ARQUIVO_CACHE_DADOS = "cache_zabbix.db" # Nome alterado para refletir Zabbix
 
 # === Debugging ===
 DEBUG_MODE = True # Ativa/desativa mensagens de debug adicionais
-PC_MODE = False  # True para simular leituras de sensor no PC (sem hardware real)
+PC_MODE = True  # True para simular leituras de sensor no PC (sem hardware real)
 
 print("Configurações carregadas de config.py")
 # Se PC_MODE for True, pode ser útil ajustar outros valores para teste rápido,
