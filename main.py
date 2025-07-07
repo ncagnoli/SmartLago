@@ -1,10 +1,10 @@
-import machine
+#import machine
 import time
-import config
+#import config
 import utils
-import wifi_manager
-import sensor_manager
-import zabbix_client
+#import wifi_manager
+#import sensor_manager
+#import zabbix_client
 import led_signals
 
 def ciclo_principal():
