@@ -23,7 +23,7 @@ try:
         print(f"[{utils.get_timestamp()}] No DS18B20 sensor found on pin {config.DS18B20_PIN}.")
         ds_sensor = None
     else:
-        print(f"[{utils.get_timestamp()}] DS18B20 sensor found: {roms}")
+        print(f"[{utils.get_timestamp()}] DS18B20 sensor initialized on pin {config.DS18B20_PIN}.")
 except ImportError:
     print(f"[{utils.get_timestamp()}] onewire/ds18x20 libraries not found. Temperature sensor disabled.")
     ds_sensor = None
@@ -58,25 +58,29 @@ except Exception as e:
     tds_adc = None
 
 # --- Statistical Calculation Functions ---
-def _calculate_mode(readings: list, round_to_decimal_places=None):
+def _calculate_central_value(readings: list):
+    """
+    Calculates the value with the minimum sum of absolute distances to all other values.
+    This value is one of the actual readings and is more robust to outliers than the mean.
+    """
     if not readings:
         return None
-    if round_to_decimal_places is not None:
-        processed_readings = [round(l, round_to_decimal_places) for l in readings]
-    else:
-        processed_readings = list(readings)
-    if not processed_readings:
-        return None
-    counts = {}
-    for value in processed_readings:
-        counts[value] = counts.get(value, 0) + 1
-    if not counts:
-        return None
-    max_count = max(counts.values())
-    if max_count == 1 and len(processed_readings) > 1:
-        return None
-    modes = [key for key, value in counts.items() if value == max_count]
-    return min(modes)
+
+    min_sum_dist = float('inf')
+    central_value = None
+
+    for i in range(len(readings)):
+        current_sum_dist = 0
+        for j in range(len(readings)):
+            if i == j:
+                continue
+            current_sum_dist += abs(readings[i] - readings[j])
+
+        if current_sum_dist < min_sum_dist:
+            min_sum_dist = current_sum_dist
+            central_value = readings[i]
+
+    return central_value
 
 # --- Individual Sensor Reading Functions ---
 def read_temperature_ds18b20():
@@ -135,102 +139,89 @@ def read_tds_adc():
         return None
 
 # --- Reading Processing and Filtering Function ---
-def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s, outlier_limit_percent, mode_decimal_places=None):
+def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s, **kwargs):
     if not callable(reading_func):
         print(f"[{utils.get_timestamp()}] {sensor_name}: Reading function is not callable.")
         return None
+
     collected_readings = []
     print(f"[{utils.get_timestamp()}] {sensor_name}: Starting {num_readings} readings with {reading_interval_s}s interval...")
+
     for i in range(num_readings):
         value = reading_func()
         if value is not None:
             collected_readings.append(value)
-            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {value:.2f}" if isinstance(value, float) else f"{value}")
+            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {value:.2f if isinstance(value, float) else value}")
         else:
             print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: Failure")
         time.sleep(reading_interval_s)
+
     if not collected_readings:
         print(f"[{utils.get_timestamp()}] {sensor_name}: No successful readings.")
         return None
-    raw_average = sum(collected_readings) / len(collected_readings)
-    filtered_readings = []
-    if outlier_limit_percent > 0:
-        for v in collected_readings:
-            is_outlier = False
-            if abs(raw_average) > 1e-6:
-                if abs(v - raw_average) / raw_average > outlier_limit_percent:
-                    is_outlier = True
-            if is_outlier:
-                print(f"[{utils.get_timestamp()}] {sensor_name}: value {v} discarded as outlier (raw average {raw_average:.2f}).")
-            else:
-                filtered_readings.append(v)
-    else:
-        filtered_readings = list(collected_readings)
-    if not filtered_readings:
-        print(f"[{utils.get_timestamp()}] {sensor_name}: All readings were discarded as outliers.")
-        return None
-    final_sensor_value = _calculate_mode(filtered_readings, round_to_decimal_places=mode_decimal_places)
+
+    # New method: Calculate the value with the minimum sum of absolute distances
+    final_sensor_value = _calculate_central_value(collected_readings)
+
     if final_sensor_value is None:
-        print(f"[{utils.get_timestamp()}] {sensor_name}: No clear mode found. Using mean as fallback.")
-        if filtered_readings:
-             final_sensor_value = sum(filtered_readings) / len(filtered_readings)
-        else:
-             return None
-    print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Mode/Mean fallback): {final_sensor_value:.2f}" if isinstance(final_sensor_value, float) else f"{final_sensor_value}")
+        print(f"[{utils.get_timestamp()}] {sensor_name}: Could not determine a central value from readings: {collected_readings}")
+        return None
+
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Original readings: {collected_readings}")
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Minimum Sum of Distances): {final_sensor_value:.2f if isinstance(final_sensor_value, float) else final_sensor_value}")
+
     return final_sensor_value
 
 # --- Main Public Functions ---
 def read_all_sensors():
-    """Reads all configured sensors, applying filtering and mode calculation."""
+    """Reads all configured sensors, applying the central value calculation."""
     try:
         import led_signals
         if hasattr(led_signals, 'signal_sensor_reading_in_progress'):
             led_signals.signal_sensor_reading_in_progress()
     except ImportError:
         pass
+
     print(f"[{utils.get_timestamp()}] Starting reading of all sensors...")
     data = {}
+
     if ds_sensor:
         data["temperature"] = _process_sensor_readings(
             reading_func=read_temperature_ds18b20,
             sensor_name="Temperature",
             num_readings=config.TEMP_NUM_READINGS,
-            reading_interval_s=config.TEMP_READING_INTERVAL_S,
-            outlier_limit_percent=config.TEMP_OUTLIER_LIMIT,
-            mode_decimal_places=1)
+            reading_interval_s=config.TEMP_READING_INTERVAL_S)
     else:
         data["temperature"] = None
+
     if hcsr04_sensor_pins:
         data["distance"] = _process_sensor_readings(
             reading_func=read_distance_hcsr04,
             sensor_name="Distance",
             num_readings=config.DIST_NUM_READINGS,
-            reading_interval_s=config.DIST_READING_INTERVAL_S,
-            outlier_limit_percent=config.DIST_OUTLIER_LIMIT,
-            mode_decimal_places=0)
+            reading_interval_s=config.DIST_READING_INTERVAL_S)
     else:
         data["distance"] = None
+
     if turbidity_adc:
         data["turbidity"] = _process_sensor_readings(
             reading_func=read_turbidity_adc,
             sensor_name="Turbidity",
             num_readings=config.TURB_NUM_READINGS,
-            reading_interval_s=config.TURB_READING_INTERVAL_S,
-            outlier_limit_percent=config.TURB_OUTLIER_LIMIT,
-            mode_decimal_places=None)
+            reading_interval_s=config.TURB_READING_INTERVAL_S)
     else:
         data["turbidity"] = None
+
     if tds_adc:
         data["tds"] = _process_sensor_readings(
             reading_func=read_tds_adc,
             sensor_name="TDS",
             num_readings=config.TDS_NUM_READINGS,
-            reading_interval_s=config.TDS_READING_INTERVAL_S,
-            outlier_limit_percent=config.TDS_OUTLIER_LIMIT,
-            mode_decimal_places=None)
+            reading_interval_s=config.TDS_READING_INTERVAL_S)
     else:
         data["tds"] = None
-    print(f"[{utils.get_timestamp()}] Final sensor data (Mode/Mean): {data}")
+
+    print(f"[{utils.get_timestamp()}] Final sensor data: {data}")
     return data
 
 def read_specific_sensor(sensor_name_to_read: str):
@@ -241,18 +232,18 @@ def read_specific_sensor(sensor_name_to_read: str):
             led_signals.signal_sensor_reading_in_progress()
     except ImportError:
         pass
+
     print(f"[{utils.get_timestamp()}] Starting reading for sensor: {sensor_name_to_read}")
     sensor_value = None
     unit = None
+
     if sensor_name_to_read == "temperature":
         if ds_sensor:
             sensor_value = _process_sensor_readings(
                 reading_func=read_temperature_ds18b20,
                 sensor_name="Temperature",
                 num_readings=config.TEMP_NUM_READINGS,
-                reading_interval_s=config.TEMP_READING_INTERVAL_S,
-                outlier_limit_percent=config.TEMP_OUTLIER_LIMIT,
-                mode_decimal_places=1)
+                reading_interval_s=config.TEMP_READING_INTERVAL_S)
             unit = "C"
     elif sensor_name_to_read == "distance":
         if hcsr04_sensor_pins:
@@ -260,9 +251,7 @@ def read_specific_sensor(sensor_name_to_read: str):
                 reading_func=read_distance_hcsr04,
                 sensor_name="Distance",
                 num_readings=config.DIST_NUM_READINGS,
-                reading_interval_s=config.DIST_READING_INTERVAL_S,
-                outlier_limit_percent=config.DIST_OUTLIER_LIMIT,
-                mode_decimal_places=0)
+                reading_interval_s=config.DIST_READING_INTERVAL_S)
             unit = "cm"
     elif sensor_name_to_read == "turbidity":
         if turbidity_adc:
@@ -270,9 +259,7 @@ def read_specific_sensor(sensor_name_to_read: str):
                 reading_func=read_turbidity_adc,
                 sensor_name="Turbidity",
                 num_readings=config.TURB_NUM_READINGS,
-                reading_interval_s=config.TURB_READING_INTERVAL_S,
-                outlier_limit_percent=config.TURB_OUTLIER_LIMIT,
-                mode_decimal_places=None)
+                reading_interval_s=config.TURB_READING_INTERVAL_S)
             unit = "ADC"
     elif sensor_name_to_read == "tds":
         if tds_adc:
@@ -280,13 +267,12 @@ def read_specific_sensor(sensor_name_to_read: str):
                 reading_func=read_tds_adc,
                 sensor_name="TDS",
                 num_readings=config.TDS_NUM_READINGS,
-                reading_interval_s=config.TDS_READING_INTERVAL_S,
-                outlier_limit_percent=config.TDS_OUTLIER_LIMIT,
-                mode_decimal_places=None)
+                reading_interval_s=config.TDS_READING_INTERVAL_S)
             unit = "ADC"
     else:
         print(f"[{utils.get_timestamp()}] Unknown sensor '{sensor_name_to_read}'.")
         return None
+
     if sensor_value is not None:
         return {"sensor": sensor_name_to_read, "value": sensor_value, "unit": unit}
     else:
