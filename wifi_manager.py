@@ -94,6 +94,12 @@ def is_connected():
         return True
     return False
 
+def get_ip():
+    """Returns the current IP address if connected, otherwise None."""
+    if is_connected():
+        return wlan.ifconfig()[0]
+    return None
+
 if __name__ == '__main__':
     # To test, you would need a config.py in the same directory
     # or pass SSID and PASSWORD directly.

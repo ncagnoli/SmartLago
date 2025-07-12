@@ -139,7 +139,7 @@ def read_tds_adc():
         return None
 
 # --- Reading Processing and Filtering Function ---
-def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s, **kwargs):
+def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s):
     if not callable(reading_func):
         print(f"[{utils.get_timestamp()}] {sensor_name}: Reading function is not callable.")
         return None
@@ -151,7 +151,9 @@ def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_in
         value = reading_func()
         if value is not None:
             collected_readings.append(value)
-            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {value:.2f if isinstance(value, float) else value}")
+            # Correctly format the value outside the f-string to avoid syntax errors
+            formatted_value = f"{value:.2f}" if isinstance(value, float) else str(value)
+            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {formatted_value}")
         else:
             print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: Failure")
         time.sleep(reading_interval_s)
@@ -167,8 +169,9 @@ def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_in
         print(f"[{utils.get_timestamp()}] {sensor_name}: Could not determine a central value from readings: {collected_readings}")
         return None
 
+    formatted_final_value = f"{final_sensor_value:.2f}" if isinstance(final_sensor_value, float) else final_sensor_value
     print(f"[{utils.get_timestamp()}] {sensor_name}: Original readings: {collected_readings}")
-    print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Minimum Sum of Distances): {final_sensor_value:.2f if isinstance(final_sensor_value, float) else final_sensor_value}")
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Minimum Sum of Distances): {formatted_final_value}")
 
     return final_sensor_value
 
