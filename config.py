@@ -1,23 +1,23 @@
-# === Configurações Gerais ===
-SSID = "Suryland"  # Nome da rede Wi-Fi
-SENHA = "AvengersAssemble2020@@"  # Senha da rede Wi-Fi
+# === General Settings ===
+SSID = "Suryland"  # Wi-Fi network name
+SENHA = "AvengersAssemble2020@@"  # Wi-Fi network password
 
-# === Configurações do Servidor HTTP ===
-HTTP_PORT = 80 # Porta padrão para HTTP
-HTTP_MAX_PENDING_CONN = 5 # Número máximo de conexões pendentes no socket do servidor
-HTTP_CLIENT_TIMEOUT_S = 10 # Timeout em segundos para operações de socket com o cliente (recv, send)
-HTTP_MAX_REQUEST_SIZE = 1024 # Tamanho máximo em bytes da requisição HTTP a ser lida
+# === HTTP Server Settings ===
+HTTP_PORT = 80 # Default HTTP port
+HTTP_MAX_PENDING_CONN = 5 # Maximum number of pending connections on the server socket
+HTTP_CLIENT_TIMEOUT_S = 10 # Timeout in seconds for client socket operations (recv, send)
+HTTP_MAX_REQUEST_SIZE = 1024 # Maximum size in bytes of the HTTP request to be read
 
-# === Intervalos ===
-# INTERVALO_LOOP_PRINCIPAL foi substituído pela lógica do servidor HTTP e INTERVALO_HEARTBEAT_MAIN
-INTERVALO_HEARTBEAT_MAIN = 5 # Intervalo para o loop de manutenção em main.py (segundos)
-INTERVALO_RECONEXAO_WIFI = 60 # Intervalo para tentar reconectar ao Wi-Fi se cair (segundos)
+# === Intervals ===
+# MAIN_LOOP_INTERVAL has been replaced by HTTP server logic and MAIN_HEARTBEAT_INTERVAL
+INTERVALO_HEARTBEAT_MAIN = 5 # Interval for the maintenance loop in main.py (seconds) - Note: main.py loop structure changed
+INTERVALO_RECONEXAO_WIFI = 60 # Interval to try reconnecting to Wi-Fi if it drops (seconds)
 
-# Configurações de leitura por sensor (serão usadas pelos endpoints)
-# Cada sensor terá: NUM_LEITURAS_X, INTERVALO_LEITURA_X_S
-# Exemplo para temperatura:
+# Sensor reading configurations (will be used by endpoints)
+# Each sensor will have: NUM_READINGS_X, READING_INTERVAL_X_S
+# Example for temperature:
 NUM_LEITURAS_TEMP = 10
-INTERVALO_LEITURA_TEMP_S = 1 # Intervalo entre as leituras individuais para compor uma medição final
+INTERVALO_LEITURA_TEMP_S = 1 # Interval between individual readings to compose a final measurement
 
 NUM_LEITURAS_DIST = 10
 INTERVALO_LEITURA_DIST_S = 1
@@ -26,41 +26,41 @@ NUM_LEITURAS_TURB = 10
 INTERVALO_LEITURA_TURB_S = 1
 
 NUM_LEITURAS_TDS = 10
-INTERVALO_LEITURA_TDS_S = 1 # Intervalo entre as leituras individuais de TDS
+INTERVALO_LEITURA_TDS_S = 1 # Interval between individual TDS readings
 
-# MAX_REENVIO_ZABBIX não é mais necessário
+# ZABBIX_MAX_RESEND is no longer needed
 
-# === Limites de Outlier para Sensores ===
-# Valores em percentual (ex: 0.10 para 10%)
-# Estes podem ser globais ou por sensor, se necessário.
+# === Sensor Outlier Limits ===
+# Values in percentage (e.g., 0.10 for 10%)
+# These can be global or per sensor, if necessary.
 LIMITE_OUTLIER_TEMP = 0.10
 LIMITE_OUTLIER_DIST = 0.50
 LIMITE_OUTLIER_TURB = 0.20
-LIMITE_OUTLIER_TDS = 0.20 # Exemplo, ajustar conforme necessidade
+LIMITE_OUTLIER_TDS = 0.20 # Example, adjust as needed
 
-# === Pinos dos Sensores ===
-# Estes serão usados pelos módulos específicos dos sensores
-PIN_LED_ONBOARD = "LED" # Pino do LED da placa Pico W
+# === Sensor Pins ===
+# These will be used by the specific sensor modules
+PIN_LED_ONBOARD = "LED" # Pico W onboard LED pin
 
-# Pinos para o sensor de temperatura DS18B20
+# Pins for DS18B20 temperature sensor
 PIN_DS18B20 = 18
 
-# Pinos para o sensor de distância HC-SR04
+# Pins for HC-SR04 distance sensor
 PIN_HCSR04_TRIGGER = 20
 PIN_HCSR04_ECHO = 19
 
-# Pino para o sensor de turbidez (ADC)
+# Pin for turbidity sensor (ADC)
 PIN_TURBIDEZ_ADC = 26 # ADC0
 
-# Pino para o sensor TDS (ADC) - Exemplo, verificar pino correto
-PIN_TDS_ADC = 27 # ADC1 - Exemplo, ajustar se necessário
+# Pin for TDS sensor (ADC) - Example, verify correct pin
+PIN_TDS_ADC = 27 # ADC1 - Example, adjust if necessary
 
-# === Arquivos de Log/Cache ===
-ARQUIVO_FALHAS_LOG = "falhas.log"
-# ARQUIVO_CACHE_DADOS não é mais necessário com a remoção do Zabbix e sua lógica de cache
+# === Log/Cache Files ===
+ARQUIVO_FALHAS_LOG = "falhas.log" # Failure log file
+# DATA_CACHE_FILE is no longer needed with the removal of Zabbix and its caching logic
 
-# PC_MODE foi removido. O código agora assume que está rodando em hardware MicroPython.
-# DEBUG_MODE foi removido. Os logs de debug agora são sempre ativos.
+# PC_MODE has been removed. The code now assumes it's running on MicroPython hardware.
+# DEBUG_MODE has been removed. Debug logs are now always active.
 
-print("Configurações carregadas de config.py")
-# A lógica condicional para PC_MODE foi removida.
+print("Configurations loaded from config.py")
+# Conditional logic for PC_MODE has been removed.
