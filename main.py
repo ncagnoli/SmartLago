@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     if wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
         led_signals.signal_wifi_status(True)
-        print(f"[{utils.get_timestamp()}] Wi-Fi connected successfully. IP: {wifi_manager.get_ip()}")
+        print(f"[{utils.get_timestamp()}] Wi-Fi connected successfully.")
     else:
         led_signals.signal_wifi_status(False)
         print(f"[{utils.get_timestamp()}] Critical failure to connect to Wi-Fi on startup. Check credentials and network.")
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             led_signals.signal_wifi_status(False)
             if wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
                 led_signals.signal_wifi_status(True)
-                print(f"[{utils.get_timestamp()}] Wi-Fi reconnected successfully. IP: {wifi_manager.get_ip()}")
+                print(f"[{utils.get_timestamp()}] Wi-Fi reconnected successfully.")
                 # Immediately tries to (re)start the server in the next while True cycle
             else:
                 print(f"[{utils.get_timestamp()}] Failed to reconnect Wi-Fi. Trying again in {config.WIFI_RECONNECT_INTERVAL_S}s.")
