@@ -2,65 +2,65 @@ import time
 import config
 import utils
 import wifi_manager
-import http_server # Importado aqui pois é chamado diretamente no fluxo principal
+import http_server # Imported here as it's called directly in the main flow
 import led_signals
-# sensor_manager é usado por http_server, não diretamente por main.py no fluxo principal
+# sensor_manager is used by http_server, not directly by main.py in the main flow
 
 if __name__ == "__main__":
-    led_signals.sinal_inicio_script()
+    led_signals.signal_script_start() # Corrected function name
 
-    # 1. Conexão Wi-Fi Inicial
-    print(f"[{utils.agora()}] Iniciando tentativa de conexão Wi-Fi para '{config.SSID}'...")
+    # 1. Initial Wi-Fi Connection
+    print(f"[{utils.get_timestamp()}] Attempting initial Wi-Fi connection to '{config.WIFI_SSID}'...")
 
-    if wifi_manager.conectar(config.SSID, config.SENHA):
-        led_signals.sinal_status_wifi(True)
-        print(f"[{utils.agora()}] Wi-Fi conectado com sucesso. IP: {wifi_manager.get_ip()}")
+    if wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
+        led_signals.signal_wifi_status(True)
+        print(f"[{utils.get_timestamp()}] Wi-Fi connected successfully. IP: {wifi_manager.get_ip()}")
     else:
-        led_signals.sinal_status_wifi(False)
-        print(f"[{utils.agora()}] Falha crítica ao conectar ao Wi-Fi na inicialização. Verifique as credenciais e a rede.")
-        # O script prosseguirá para o loop de tentativa de inicialização do servidor.
+        led_signals.signal_wifi_status(False)
+        print(f"[{utils.get_timestamp()}] Critical failure to connect to Wi-Fi on startup. Check credentials and network.")
+        # The script will proceed to the server startup attempt loop.
 
-    # 2. Loop Principal: Tentar iniciar o servidor HTTP ou reconectar Wi-Fi
-    # Este loop continua indefinidamente, tentando manter o servidor operacional.
+    # 2. Main Loop: Try to start the HTTP server or reconnect Wi-Fi
+    # This loop runs indefinitely, attempting to keep the server operational.
     while True:
-        if wifi_manager.esta_conectado():
-            print(f"[{utils.agora()}] Wi-Fi conectado. Tentando iniciar/verificar servidor HTTP...")
+        if wifi_manager.is_connected():
+            print(f"[{utils.get_timestamp()}] Wi-Fi connected. Attempting to start/check HTTP server...")
 
-            # http_server.start_server() é bloqueante e contém seu próprio loop de escuta.
-            # Ele só retorna False se não puder iniciar (ex: erro de socket).
-            # Se parar por uma exceção interna não tratada, o script pode sair do start_server.
+            # http_server.start_server() is blocking and contains its own listening loop.
+            # It only returns False if it cannot start (e.g., socket error).
+            # If it stops due to an unhandled internal exception, the script might exit start_server.
             server_started_successfully = http_server.start_server()
 
             if not server_started_successfully:
-                print(f"[{utils.agora()}] Servidor HTTP falhou ao iniciar (ex: bind error). Verifique a configuração da porta.")
-                led_signals.sinal_erro_geral()
+                print(f"[{utils.get_timestamp()}] HTTP server failed to start (e.g., bind error). Check port configuration.")
+                led_signals.signal_general_error()
             else:
-                # Se start_server() retornar True (ou qualquer valor não False),
-                # significa que ele parou por algum motivo após iniciar (o que não deveria ocorrer).
-                # Isso pode indicar um erro inesperado dentro do loop do servidor.
-                print(f"[{utils.agora()}] Servidor HTTP parou inesperadamente após iniciar.")
-                led_signals.sinal_erro_geral()
+                # If start_server() returns True (or any non-False value),
+                # it means it stopped for some reason after starting (which shouldn't happen).
+                # This could indicate an unexpected error within the server loop.
+                print(f"[{utils.get_timestamp()}] HTTP server stopped unexpectedly after starting.")
+                led_signals.signal_general_error()
 
-            # Pausa antes de tentar reiniciar o servidor ou reconectar o Wi-Fi.
-            print(f"[{utils.agora()}] Aguardando {config.INTERVALO_RECONEXAO_WIFI}s antes da próxima tentativa...")
-            time.sleep(config.INTERVALO_RECONEXAO_WIFI)
+            # Pause before trying to restart the server or reconnect Wi-Fi.
+            print(f"[{utils.get_timestamp()}] Waiting {config.WIFI_RECONNECT_INTERVAL_S}s before next attempt...")
+            time.sleep(config.WIFI_RECONNECT_INTERVAL_S)
 
-        else: # Wi-Fi não está conectado
-            print(f"[{utils.agora()}] Wi-Fi desconectado. Tentando reconectar...")
-            led_signals.sinal_status_wifi(False)
-            if wifi_manager.conectar(config.SSID, config.SENHA):
-                led_signals.sinal_status_wifi(True)
-                print(f"[{utils.agora()}] Wi-Fi reconectado com sucesso. IP: {wifi_manager.get_ip()}")
-                # Imediatamente tenta (re)iniciar o servidor no próximo ciclo do while True
+        else: # Wi-Fi is not connected
+            print(f"[{utils.get_timestamp()}] Wi-Fi disconnected. Attempting to reconnect...")
+            led_signals.signal_wifi_status(False)
+            if wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
+                led_signals.signal_wifi_status(True)
+                print(f"[{utils.get_timestamp()}] Wi-Fi reconnected successfully. IP: {wifi_manager.get_ip()}")
+                # Immediately tries to (re)start the server in the next while True cycle
             else:
-                print(f"[{utils.agora()}] Falha ao reconectar Wi-Fi. Tentando novamente em {config.INTERVALO_RECONEXAO_WIFI}s.")
-                time.sleep(config.INTERVALO_RECONEXAO_WIFI)
+                print(f"[{utils.get_timestamp()}] Failed to reconnect Wi-Fi. Trying again in {config.WIFI_RECONNECT_INTERVAL_S}s.")
+                time.sleep(config.WIFI_RECONNECT_INTERVAL_S)
 
-    # O código abaixo deste loop while True não deve ser alcançado em operação normal.
-    # Se chegar aqui, é um estado de erro não previsto pelo loop.
-    print(f"[{utils.agora()}] Fim inesperado do script principal (fora do loop de recuperação).")
-    led_signals.sinal_erro_geral()
-    # Mantém o dispositivo "vivo" em um loop final para inspeção, se necessário.
+    # The code below this while True loop should not be reached in normal operation.
+    # If it gets here, it's an error state not caught by the loop.
+    print(f"[{utils.get_timestamp()}] Unexpected end of main script (outside recovery loop).")
+    led_signals.signal_general_error()
+    # Keeps the device "alive" in a final loop for inspection, if necessary.
     while True:
         time.sleep(60)
-        print(f"[{utils.agora()}] Script principal em estado de erro final. Por favor, verifique o dispositivo.")
+        print(f"[{utils.get_timestamp()}] Main script in final error state. Please check the device.")
