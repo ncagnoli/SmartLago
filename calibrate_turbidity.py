@@ -14,16 +14,16 @@ def run_calibration():
     print(f"[{utils.get_timestamp()}] Starting turbidity sensor calibration...")
 
     print(f"[{utils.get_timestamp()}] Requesting turbidity reading from sensor_manager...")
-    result = sensor_manager.read_specific_sensor("turbidez")
+    result = sensor_manager.read_specific_sensor("turbidity") # Changed to English
 
-    if result and result.get("valor") is not None:
+    if result and result.get("value") is not None: # Changed to 'value'
         print("-" * 30)
         print(f"Sensor Calibration Result: Turbidity")
         print("-" * 30)
         print(f"Timestamp: {utils.get_timestamp()}")
         print(f"Sensor Name: {result.get('sensor')}")
         # Turbidity sensor returns raw ADC value (integer)
-        print(f"Measured Value: {result.get('valor')} {result.get('unidade')}")
+        print(f"Measured Value: {result.get('value')} {result.get('unit')}") # Changed to 'value' and 'unit'
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] Turbidity sensor calibration finished.")
     else:
