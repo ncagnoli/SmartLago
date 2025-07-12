@@ -2,99 +2,99 @@ import machine
 import time
 import config
 
-# Inicialização do LED Onboard
-# O pino "LED" é um alias comum no Pico W para o LED onboard.
+# Onboard LED Initialization
+# The "LED" pin is a common alias on Pico W for the onboard LED.
 try:
     led_onboard = machine.Pin(config.PIN_LED_ONBOARD, machine.Pin.OUT)
 except TypeError:
-    # Fallback para o caso de config.PIN_LED_ONBOARD ser um número de pino inteiro
-    # Isso pode acontecer se o usuário mudar a config para, por ex, um LED externo
+    # Fallback in case config.PIN_LED_ONBOARD is an integer pin number
+    # This might happen if the user changes the config for, e.g., an external LED
     led_onboard = machine.Pin(int(config.PIN_LED_ONBOARD), machine.Pin.OUT)
 
 
-def _piscar_led(vezes=1, duracao_on=0.1, duracao_off=0.1):
-    """Função auxiliar para piscar o LED."""
-    for _ in range(vezes):
+def _blink_led(count=1, on_duration=0.1, off_duration=0.1):
+    """Helper function to blink the LED."""
+    for _ in range(count):
         led_onboard.on()
-        time.sleep(duracao_on)
+        time.sleep(on_duration)
         led_onboard.off()
-        time.sleep(duracao_off)
+        time.sleep(off_duration)
 
-def sinal_inicio_script():
-    """Sinaliza que o script principal começou a rodar."""
-    print("[LED] Sinal: Início do script")
-    _piscar_led(vezes=3, duracao_on=0.05, duracao_off=0.05)
-    time.sleep(0.5) # Pequena pausa após o sinal
+def signal_script_start():
+    """Signals that the main script has started running."""
+    print("[LED] Signal: Script start")
+    _blink_led(count=3, on_duration=0.05, off_duration=0.05)
+    time.sleep(0.5) # Short pause after the signal
 
-def sinal_status_wifi(conectado: bool):
-    """Sinaliza o status da conexão Wi-Fi."""
-    if conectado:
-        print("[LED] Sinal: Wi-Fi Conectado")
-        # Pisca 2 vezes rápido para sucesso
-        _piscar_led(vezes=2, duracao_on=0.1, duracao_off=0.1)
+def signal_wifi_status(connected: bool):
+    """Signals the Wi-Fi connection status."""
+    if connected:
+        print("[LED] Signal: Wi-Fi Connected")
+        # Blink 2 times quickly for success
+        _blink_led(count=2, on_duration=0.1, off_duration=0.1)
     else:
-        print("[LED] Sinal: Falha na conexão Wi-Fi")
-        # Pisca 1 vez longo para falha
-        _piscar_led(vezes=1, duracao_on=0.5, duracao_off=0.1)
+        print("[LED] Signal: Wi-Fi connection failed")
+        # Blink 1 long time for failure
+        _blink_led(count=1, on_duration=0.5, off_duration=0.1)
 
-def sinal_envio_dados(sucesso: bool):
-    """Sinaliza o status do envio de dados."""
-    if sucesso:
-        print("[LED] Sinal: Envio de dados com sucesso")
-        # Pisca verde (se disponível) ou uma sequência específica.
-        # Como é só um LED, vamos piscar rapidamente 3 vezes.
-        _piscar_led(vezes=3, duracao_on=0.05, duracao_off=0.05)
+def signal_data_send(success: bool):
+    """Signals the data sending status."""
+    if success:
+        print("[LED] Signal: Data sent successfully")
+        # Blink green (if available) or a specific sequence.
+        # Since it's just one LED, we'll blink rapidly 3 times.
+        _blink_led(count=3, on_duration=0.05, off_duration=0.05)
     else:
-        print("[LED] Sinal: Falha no envio de dados")
-        # Pisca vermelho (se disponível) ou uma sequência longa.
-        # Pisca lentamente 2 vezes.
-        _piscar_led(vezes=2, duracao_on=0.3, duracao_off=0.2)
+        print("[LED] Signal: Data sending failed")
+        # Blink red (if available) or a long sequence.
+        # Blink slowly 2 times.
+        _blink_led(count=2, on_duration=0.3, off_duration=0.2)
 
-def sinal_erro_geral():
-    """Sinaliza um erro geral/fatal antes de um reset, por exemplo."""
-    print("[LED] Sinal: Erro Geral")
-    # Sequência rápida e contínua (SOS-like)
-    for _ in range(3): # Repete a sequência SOS 3x
-        _piscar_led(vezes=3, duracao_on=0.05, duracao_off=0.05) # S
+def signal_general_error():
+    """Signals a general/fatal error before a reset, for example."""
+    print("[LED] Signal: General Error")
+    # Quick and continuous sequence (SOS-like)
+    for _ in range(3): # Repeat SOS sequence 3x
+        _blink_led(count=3, on_duration=0.05, off_duration=0.05) # S
         time.sleep(0.1)
-        _piscar_led(vezes=3, duracao_on=0.15, duracao_off=0.05) # O
+        _blink_led(count=3, on_duration=0.15, off_duration=0.05) # O
         time.sleep(0.1)
-        _piscar_led(vezes=3, duracao_on=0.05, duracao_off=0.05) # S
+        _blink_led(count=3, on_duration=0.05, off_duration=0.05) # S
         time.sleep(0.3)
 
-def sinal_leitura_sensores_em_andamento():
-    """Sinaliza que a leitura dos sensores está ocorrendo (opcional)."""
-    print("[LED] Sinal: Lendo sensores...")
-    # Pulso curto para indicar atividade
+def signal_sensor_reading_in_progress():
+    """Signals that sensor reading is in progress (optional)."""
+    print("[LED] Signal: Reading sensors...")
+    # Short pulse to indicate activity
     led_onboard.on()
     time.sleep(0.05)
     led_onboard.off()
 
 if __name__ == '__main__':
-    print("Testando sinais do LED...")
-    sinal_inicio_script()
+    print("Testing LED signals...")
+    signal_script_start()
     time.sleep(1)
 
-    print("Testando sinal Wi-Fi conectado...")
-    sinal_status_wifi(True)
+    print("Testing Wi-Fi connected signal...")
+    signal_wifi_status(True)
     time.sleep(1)
 
-    print("Testando sinal Wi-Fi falha...")
-    sinal_status_wifi(False)
+    print("Testing Wi-Fi failure signal...")
+    signal_wifi_status(False)
     time.sleep(1)
 
-    print("Testando sinal envio sucesso...")
-    sinal_envio_dados(True)
+    print("Testing data send success signal...")
+    signal_data_send(True)
     time.sleep(1)
 
-    print("Testando sinal envio falha...")
-    sinal_envio_dados(False)
+    print("Testing data send failure signal...")
+    signal_data_send(False)
     time.sleep(1)
 
-    print("Testando sinal leitura sensores...")
-    sinal_leitura_sensores_em_andamento()
+    print("Testing sensor reading signal...")
+    signal_sensor_reading_in_progress()
     time.sleep(1)
 
-    print("Testando sinal erro geral (longo)...")
-    sinal_erro_geral()
-    print("Teste de LED concluído.")
+    print("Testing general error signal (long)...")
+    signal_general_error()
+    print("LED test completed.")

@@ -2,23 +2,23 @@ import time
 import config
 import utils
 
-import machine # Importa machine diretamente, pois é essencial para o hardware.
-# Se machine não estiver disponível, o dispositivo não é um MicroPython e este código não deveria rodar.
+import machine # Import machine directly, as it's essential for hardware interaction.
+# If machine is not available, the device is not MicroPython-based, and this code shouldn't run.
 
-# Remover a lógica de fallback para 'random' se 'urandom' não estiver disponível,
-# pois 'urandom' é o padrão em MicroPython. Se não estiver lá, é um problema de ambiente.
+# Remove fallback logic for 'random' if 'urandom' is not available,
+# as 'urandom' is standard in MicroPython. If it's missing, it's an environment issue.
 import urandom
 
-# --- Inicialização dos Sensores ---
-# A inicialização agora ocorre independentemente de PC_MODE,
-# pois PC_MODE está sendo removido. Erros de hardware serão reportados.
+# --- Sensor Initialization ---
+# Initialization now occurs regardless of PC_MODE,
+# as PC_MODE has been removed. Hardware errors will be reported.
 ds_sensor = None
 roms = []
 hcsr04_sensor_pins = None
 adc_turbidez = None
 adc_tds = None
 
-# Sensor de Temperatura DS18B20
+# DS18B20 Temperature Sensor
 try:
     import onewire
     import ds18x20
@@ -27,105 +27,105 @@ try:
     ds_sensor = ds18x20.DS18X20(ow_bus)
     roms = ds_sensor.scan()
     if not roms:
-        print(f"[{utils.agora()}] Nenhum sensor DS18B20 encontrado no pino {config.PIN_DS18B20}.")
+        print(f"[{utils.get_timestamp()}] No DS18B20 sensor found on pin {config.PIN_DS18B20}.")
         ds_sensor = None
     else:
-        print(f"[{utils.agora()}] Sensor DS18B20 encontrado: {roms}")
+        print(f"[{utils.get_timestamp()}] DS18B20 sensor found: {roms}")
 except ImportError:
-    print(f"[{utils.agora()}] Bibliotecas onewire/ds18x20 não encontradas. Sensor de temperatura desabilitado.")
+    print(f"[{utils.get_timestamp()}] onewire/ds18x20 libraries not found. Temperature sensor disabled.")
     ds_sensor = None
 except Exception as e:
-    print(f"[{utils.agora()}] Erro ao inicializar sensor DS18B20: {e}")
+    print(f"[{utils.get_timestamp()}] Error initializing DS18B20 sensor: {e}")
     ds_sensor = None
 
-# Sensor de Distância HC-SR04
+# HC-SR04 Distance Sensor
 try:
     trigger_pin = machine.Pin(config.PIN_HCSR04_TRIGGER, machine.Pin.OUT)
     echo_pin = machine.Pin(config.PIN_HCSR04_ECHO, machine.Pin.IN)
     hcsr04_sensor_pins = {"trigger": trigger_pin, "echo": echo_pin}
-    print(f"[{utils.agora()}] Sensor HC-SR04 inicializado (Trigger: {config.PIN_HCSR04_TRIGGER}, Echo: {config.PIN_HCSR04_ECHO}).")
+    print(f"[{utils.get_timestamp()}] HC-SR04 sensor initialized (Trigger: {config.PIN_HCSR04_TRIGGER}, Echo: {config.PIN_HCSR04_ECHO}).")
 except Exception as e:
-    print(f"[{utils.agora()}] Erro ao inicializar sensor HC-SR04: {e}")
+    print(f"[{utils.get_timestamp()}] Error initializing HC-SR04 sensor: {e}")
     hcsr04_sensor_pins = None
 
-# Sensor de Turbidez (ADC)
+# Turbidity Sensor (ADC)
 try:
     adc_turbidez = machine.ADC(machine.Pin(config.PIN_TURBIDEZ_ADC))
-    print(f"[{utils.agora()}] Sensor de Turbidez ADC inicializado no pino {config.PIN_TURBIDEZ_ADC}.")
+    print(f"[{utils.get_timestamp()}] Turbidity ADC sensor initialized on pin {config.PIN_TURBIDEZ_ADC}.")
 except Exception as e:
-    print(f"[{utils.agora()}] Erro ao inicializar ADC para Turbidez: {e}")
+    print(f"[{utils.get_timestamp()}] Error initializing ADC for Turbidity: {e}")
     adc_turbidez = None
 
-# Sensor de TDS (ADC)
+# TDS Sensor (ADC)
 try:
     adc_tds = machine.ADC(machine.Pin(config.PIN_TDS_ADC))
-    print(f"[{utils.agora()}] Sensor de TDS ADC inicializado no pino {config.PIN_TDS_ADC}.")
+    print(f"[{utils.get_timestamp()}] TDS ADC sensor initialized on pin {config.PIN_TDS_ADC}.")
 except Exception as e:
-    print(f"[{utils.agora()}] Erro ao inicializar ADC para TDS: {e}")
+    print(f"[{utils.get_timestamp()}] Error initializing ADC for TDS: {e}")
     adc_tds = None
 
-# A função _simular_leitura é removida pois PC_MODE foi abolido.
-# --- Funções de Cálculo Estatístico ---
+# _simulate_reading function was removed as PC_MODE is abolished.
+# --- Statistical Calculation Functions ---
 
-def _calcular_moda(leituras: list, округление_до_casas_decimais=None):
+def _calculate_mode(readings: list, round_to_decimal_places=None):
     """
-    Calcula a moda de uma lista de leituras.
-    Se houver múltiplas modas, retorna a menor delas.
-    Se todas as leituras forem únicas (e houver mais que uma), ou a lista estiver vazia, retorna None.
-    'округление_до_casas_decimais': opcionalmente arredonda as leituras antes de calcular a moda
-                                   para agrupar valores próximos.
+    Calculates the mode of a list of readings.
+    If there are multiple modes, returns the smallest one.
+    If all readings are unique (and there's more than one), or the list is empty, returns None.
+    'round_to_decimal_places': optionally rounds readings before calculating the mode
+                                   to group close values.
     """
-    if not leituras:
+    if not readings:
         return None
 
-    if округление_до_casas_decimais is not None:
-        leituras_processadas = [round(l, округление_до_casas_decimais) for l in leituras]
+    if round_to_decimal_places is not None:
+        processed_readings = [round(l, round_to_decimal_places) for l in readings]
     else:
-        leituras_processadas = list(leituras) # Copia para não modificar a original se não arredondar
+        processed_readings = list(readings) # Copy to avoid modifying the original if not rounding
 
-    if not leituras_processadas: # Caso raro, se todas as leituras originais fossem None e isso não foi filtrado antes
+    if not processed_readings: # Rare case, if all original readings were None and not filtered before
         return None
 
-    contagens = {}
-    for valor in leituras_processadas:
-        contagens[valor] = contagens.get(valor, 0) + 1
+    counts = {}
+    for value in processed_readings:
+        counts[value] = counts.get(value, 0) + 1
 
-    if not contagens: # Deve ser impossível se leituras_processadas não estiver vazio
+    if not counts: # Should be impossible if processed_readings is not empty
         return None
 
-    max_contagem = 0
-    for valor in contagens:
-        if contagens[valor] > max_contagem:
-            max_contagem = contagens[valor]
+    max_count = 0
+    for value in counts:
+        if counts[value] > max_count:
+            max_count = counts[value]
 
-    # Se todas as contagens forem 1 (todos os valores únicos) e houver mais de um valor, não há moda clara.
-    # Ou se a contagem máxima for 1 e houver mais de um item, também não há moda clara.
-    if max_contagem == 1 and len(leituras_processadas) > 1:
-         # Se todos os valores são únicos, não há uma moda clara.
-         # Poderíamos retornar a média como fallback, ou None.
-         # print(f"[{utils.agora()}] [Moda] Todos os valores são únicos, sem moda clara. Retornando a média como fallback.")
-         # return sum(leituras_processadas) / len(leituras_processadas)
+    # If all counts are 1 (all values unique) and there's more than one value, no clear mode.
+    # Or if max_count is 1 and there's more than one item, also no clear mode.
+    if max_count == 1 and len(processed_readings) > 1:
+         # If all values are unique, there's no clear mode.
+         # We could return the mean as a fallback, or None.
+         # print(f"[{utils.get_timestamp()}] [Mode] All values are unique, no clear mode. Returning mean as fallback.")
+         # return sum(processed_readings) / len(processed_readings)
         return None
 
 
-    modas = []
-    for valor, contagem in contagens.items():
-        if contagem == max_contagem:
-            modas.append(valor)
+    modes = []
+    for value, count in counts.items():
+        if count == max_count:
+            modes.append(value)
 
-    if not modas: # Impossível se max_contagem > 0
+    if not modes: # Impossible if max_count > 0
         return None
 
-    # Retorna a menor das modas se houver empate, para consistência.
-    # Ou poderia ser a primeira encontrada: return modas[0]
-    return min(modas)
+    # Return the smallest of the modes if there's a tie, for consistency.
+    # Or could be the first one found: return modes[0]
+    return min(modes)
 
 
-def ler_temperatura_ds18b20():
-    """Lê a temperatura do sensor DS18B20."""
-    # A simulação PC_MODE foi removida. Esta função agora sempre tenta ler o hardware.
+def read_temperature_ds18b20():
+    """Reads the temperature from the DS18B20 sensor."""
+    # PC_MODE simulation has been removed. This function now always tries to read from hardware.
     if not ds_sensor or not roms:
-        print(f"[{utils.agora()}] Sensor DS18B20 não inicializado ou não encontrado.")
+        print(f"[{utils.get_timestamp()}] DS18B20 sensor not initialized or not found.")
         return None
     try:
         ds_sensor.convert_temp()
@@ -133,14 +133,14 @@ def ler_temperatura_ds18b20():
         temp = ds_sensor.read_temp(roms[0])
         return temp
     except Exception as e:
-        print(f"[{utils.agora()}] Erro ao ler temperatura DS18B20: {e}")
+        print(f"[{utils.get_timestamp()}] Error reading DS18B20 temperature: {e}")
         return None
 
-def ler_distancia_hcsr04():
-    """Lê a distância do sensor HC-SR04."""
-    # A simulação PC_MODE foi removida.
+def read_distance_hcsr04():
+    """Reads the distance from the HC-SR04 sensor."""
+    # PC_MODE simulation has been removed.
     if not hcsr04_sensor_pins:
-        print(f"[{utils.agora()}] Sensor HC-SR04 não inicializado.")
+        print(f"[{utils.get_timestamp()}] HC-SR04 sensor not initialized.")
         return None
     trigger = hcsr04_sensor_pins["trigger"]
     echo = hcsr04_sensor_pins["echo"]
@@ -151,333 +151,341 @@ def ler_distancia_hcsr04():
         duracao_pulso = machine.time_pulse_us(echo, 1, 30000)
         if duracao_pulso < 0: return None
         distancia_cm = (duracao_pulso / 2) / 29.1
-        return distancia_cm
-    except OSError: # Timeout geralmente
+        return distance_cm
+    except OSError: # Usually a timeout
         return None
     except Exception as e:
-        print(f"[{utils.agora()}] Erro inesperado ao ler HC-SR04: {e}")
+        print(f"[{utils.get_timestamp()}] Unexpected error reading HC-SR04: {e}")
         return None
 
-def ler_turbidez_adc():
-    """Lê o valor bruto do ADC para turbidez."""
-    # A simulação PC_MODE foi removida.
+def read_turbidity_adc():
+    """Reads the raw ADC value for turbidity."""
+    # PC_MODE simulation has been removed.
     if not adc_turbidez:
-        print(f"[{utils.agora()}] Sensor de Turbidez (ADC) não inicializado.")
+        print(f"[{utils.get_timestamp()}] Turbidity sensor (ADC) not initialized.")
         return None
     try:
         return adc_turbidez.read_u16()
     except Exception as e:
-        print(f"[{utils.agora()}] Erro ao ler ADC de turbidez: {e}")
+        print(f"[{utils.get_timestamp()}] Error reading turbidity ADC: {e}")
         return None
 
-def ler_tds_adc():
-    """Lê o valor bruto do ADC para TDS."""
-    # A simulação PC_MODE foi removida.
+def read_tds_adc():
+    """Reads the raw ADC value for TDS."""
+    # PC_MODE simulation has been removed.
     if not adc_tds:
-        print(f"[{utils.agora()}] Sensor de TDS (ADC) não inicializado.")
+        print(f"[{utils.get_timestamp()}] TDS sensor (ADC) not initialized.")
         return None
     try:
         return adc_tds.read_u16()
     except Exception as e:
-        print(f"[{utils.agora()}] Erro ao ler ADC de TDS: {e}")
+        print(f"[{utils.get_timestamp()}] Error reading TDS ADC: {e}")
         return None
 
-# --- Função de Processamento de Leituras e Filtragem ---
+# --- Reading Processing and Filtering Function ---
 
-def _processar_leituras_sensor(leituras_func, nome_sensor, num_leituras, intervalo_leitura_s, limite_outlier_percent, casas_decimais_moda=None):
+def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s, outlier_limit_percent, mode_decimal_places=None):
     """
-    Coleta várias leituras de um sensor, filtra outliers e calcula a MODA.
-    Retorna a moda ou None se não houver leituras válidas ou moda clara.
-    'casas_decimais_moda': número de casas decimais para arredondar antes de calcular a moda.
-                           Sensores como temperatura podem se beneficiar disso. ADC não.
+    Collects multiple readings from a sensor, filters outliers, and calculates the MODE.
+    Returns the mode, or None if no valid readings or clear mode.
+    'mode_decimal_places': number of decimal places to round to before calculating mode.
+                           Sensors like temperature might benefit from this; ADC raw values usually don't.
     """
-    if not callable(leituras_func):
-        print(f"[{utils.agora()}] {nome_sensor}: Função de leitura não é chamável.")
+    if not callable(reading_func):
+        print(f"[{utils.get_timestamp()}] {sensor_name}: Reading function is not callable.")
         return None
 
-    leituras_coletadas = []
-    print(f"[{utils.agora()}] {nome_sensor}: Iniciando {num_leituras} leituras com intervalo de {intervalo_leitura_s}s...")
+    collected_readings = []
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Starting {num_readings} readings with {reading_interval_s}s interval...")
 
-    for i in range(num_leituras):
-        valor = leituras_func()
-        if valor is not None:
-            leituras_coletadas.append(valor)
-            print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: {valor:.2f}" if isinstance(valor, float) else f"{valor}")
+    for i in range(num_readings):
+        value = reading_func()
+        if value is not None:
+            collected_readings.append(value)
+            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {value:.2f}" if isinstance(value, float) else f"{value}")
         else:
-            print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: Falha")
+            print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: Failure")
 
-        time.sleep(intervalo_leitura_s)
+        time.sleep(reading_interval_s)
 
-    if not leituras_coletadas:
-        print(f"[{utils.agora()}] {nome_sensor}: Nenhuma leitura bem-sucedida.")
+    if not collected_readings:
+        print(f"[{utils.get_timestamp()}] {sensor_name}: No successful readings.")
         return None
 
-    # Filtragem de outliers (baseada na média bruta, como antes)
-    media_bruta = sum(leituras_coletadas) / len(leituras_coletadas)
-    leituras_filtradas = []
+    # Outlier filtering (based on raw average, as before)
+    raw_average = sum(collected_readings) / len(collected_readings)
+    filtered_readings = []
 
-    if limite_outlier_percent > 0:
-        for v in leituras_coletadas:
-            # A lógica de outlier pode precisar de refinamento, especialmente para valores zero.
-            # Se a média bruta for muito pequena (próxima de zero), a divisão pode ser instável.
+    if outlier_limit_percent > 0:
+        for v in collected_readings:
+            # Outlier logic might need refinement, especially for zero values.
+            # If raw_average is very small (close to zero), division can be unstable.
             is_outlier = False
-            if abs(media_bruta) > 1e-6: # Evita divisão por zero ou instabilidade
-                if abs(v - media_bruta) / media_bruta > limite_outlier_percent:
+            if abs(raw_average) > 1e-6: # Avoid division by zero or instability
+                if abs(v - raw_average) / raw_average > outlier_limit_percent:
                     is_outlier = True
-            elif v != 0 and abs(v) > limite_outlier_percent * 1: # Fallback se media_bruta é zero, compara com uma unidade
-                 # Se media_bruta é zero, um valor não-zero pode ser um outlier se for grande o suficiente.
-                 # Esta parte é mais heurística.
-                 pass # Depende do que se espera quando a média é zero.
+            elif v != 0 and abs(v) > outlier_limit_percent * 1: # Fallback if raw_average is zero, compare with a unit
+                 # If raw_average is zero, a non-zero value might be an outlier if large enough.
+                 # This part is more heuristic.
+                 pass # Depends on what's expected when the average is zero.
 
             if is_outlier:
-                print(f"[{utils.agora()}] {nome_sensor}: valor {v} descartado como outlier (média bruta {media_bruta:.2f}).")
+                print(f"[{utils.get_timestamp()}] {sensor_name}: value {v} discarded as outlier (raw average {raw_average:.2f}).")
             else:
-                leituras_filtradas.append(v)
-    else: # Sem filtragem de outlier
-        leituras_filtradas = list(leituras_coletadas)
+                filtered_readings.append(v)
+    else: # No outlier filtering
+        filtered_readings = list(collected_readings)
 
-    if not leituras_filtradas:
-        print(f"[{utils.agora()}] {nome_sensor}: Todas as leituras foram descartadas como outliers.")
-        # Fallback: talvez retornar a média bruta das leituras originais? Ou None?
-        # Por enquanto, None, indicando que a filtragem removeu tudo.
+    if not filtered_readings:
+        print(f"[{utils.get_timestamp()}] {sensor_name}: All readings were discarded as outliers.")
+        # Fallback: maybe return the raw average of original readings? Or None?
+        # For now, None, indicating filtering removed everything.
         return None
 
-    # Cálculo da MODA sobre as leituras filtradas
-    valor_final_sensor = _calcular_moda(leituras_filtradas, округление_до_casas_decimais=casas_decimais_moda)
+    # Calculate MODE on filtered readings
+    final_sensor_value = _calculate_mode(filtered_readings, round_to_decimal_places=mode_decimal_places)
 
-    if valor_final_sensor is None:
-        print(f"[{utils.agora()}] {nome_sensor}: Nenhuma moda clara encontrada nas leituras filtradas. Usando média como fallback.")
-        # Fallback para média se a moda não for clara
-        if leituras_filtradas: # Garante que há algo para calcular a média
-             valor_final_sensor = sum(leituras_filtradas) / len(leituras_filtradas)
-        else: # Isso não deveria acontecer se a verificação anterior de not leituras_filtradas funcionou
+    if final_sensor_value is None:
+        print(f"[{utils.get_timestamp()}] {sensor_name}: No clear mode found in filtered readings. Using mean as fallback.")
+        # Fallback to mean if mode is not clear
+        if filtered_readings: # Ensure there's something to average
+             final_sensor_value = sum(filtered_readings) / len(filtered_readings)
+        else: # This shouldn't happen if the previous check for not filtered_readings worked
              return None
 
-    print(f"[{utils.agora()}] {nome_sensor}: Leituras originais ({len(leituras_coletadas)}): {leituras_coletadas}")
-    print(f"[{utils.agora()}] {nome_sensor}: Média bruta: {media_bruta:.2f}")
-    print(f"[{utils.agora()}] {nome_sensor}: Leituras filtradas ({len(leituras_filtradas)}): {leituras_filtradas}")
-    if isinstance(valor_final_sensor, float):
-        print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor:.2f}")
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Original readings ({len(collected_readings)}): {collected_readings}")
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Raw average: {raw_average:.2f}")
+    print(f"[{utils.get_timestamp()}] {sensor_name}: Filtered readings ({len(filtered_readings)}): {filtered_readings}")
+    if isinstance(final_sensor_value, float):
+        print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Mode/Mean fallback): {final_sensor_value:.2f}")
     else:
-        print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor}")
+        print(f"[{utils.get_timestamp()}] {sensor_name}: Final value (Mode/Mean fallback): {final_sensor_value}")
 
-    return valor_final_sensor
+    return final_sensor_value
 
-# --- Função Principal de Leitura dos Sensores ---
+# --- Main Sensor Reading Function ---
 
-def ler_todos_sensores():
+def read_all_sensors():
     """
-    Lê todos os sensores configurados, aplicando filtragem e cálculo de moda.
-    Retorna um dicionário com os dados dos sensores.
+    Reads all configured sensors, applying filtering and mode calculation.
+    Returns a dictionary with sensor data.
     """
-    # Tenta importar led_signals dinamicamente para evitar dependência cíclica ou erro na inicialização
+    # Try to import led_signals dynamically to avoid circular dependency or initialization error
     try:
         import led_signals
-        if hasattr(led_signals, 'sinal_leitura_sensores_em_andamento'):
-            led_signals.sinal_leitura_sensores_em_andamento()
+        if hasattr(led_signals, 'signal_sensor_reading_in_progress'): # Corrected function name
+            led_signals.signal_sensor_reading_in_progress()
     except ImportError:
-        pass # led_signals não disponível, continua sem ele
+        pass # led_signals not available, continue without it
 
-    print(f"[{utils.agora()}] Iniciando leitura de todos os sensores...")
-    dados = {}
+    print(f"[{utils.get_timestamp()}] Starting reading of all sensors...")
+    data = {}
 
-    # Temperatura
-    # A condição 'or config.PC_MODE' é removida.
+    # Temperature
+    # 'or config.PC_MODE' condition removed.
     if ds_sensor:
-        dados["temperatura"] = _processar_leituras_sensor(
-            leituras_func=ler_temperatura_ds18b20,
-            nome_sensor="Temperatura",
-            num_leituras=config.NUM_LEITURAS_TEMP,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TEMP_S,
-            limite_outlier_percent=config.LIMITE_OUTLIER_TEMP,
-            casas_decimais_moda=1
+        data["temperatura"] = _process_sensor_readings(
+            reading_func=read_temperature_ds18b20,
+            sensor_name="Temperatura",  # Keep "Temperatura" for key consistency if desired, or change to "temperature"
+            num_readings=config.NUM_LEITURAS_TEMP,
+            reading_interval_s=config.INTERVALO_LEITURA_TEMP_S,
+            outlier_limit_percent=config.LIMITE_OUTLIER_TEMP,
+            mode_decimal_places=1
         )
     else:
-        dados["temperatura"] = None
-        print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
+        data["temperatura"] = None
+        print(f"[{utils.get_timestamp()}] Temperature reading skipped (sensor not initialized).")
 
 
-    # Distância
+    # Distance
     if hcsr04_sensor_pins:
-        dados["distancia"] = _processar_leituras_sensor(
-            leituras_func=ler_distancia_hcsr04,
-            nome_sensor="Distancia",
-            num_leituras=config.NUM_LEITURAS_DIST,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_DIST_S,
-            limite_outlier_percent=config.LIMITE_OUTLIER_DIST,
-            casas_decimais_moda=0
+        data["distancia"] = _process_sensor_readings( # Keep "distancia" for key consistency
+            reading_func=read_distance_hcsr04,
+            sensor_name="Distancia",
+            num_readings=config.NUM_LEITURAS_DIST,
+            reading_interval_s=config.INTERVALO_LEITURA_DIST_S,
+            outlier_limit_percent=config.LIMITE_OUTLIER_DIST,
+            mode_decimal_places=0
         )
     else:
-        dados["distancia"] = None
-        print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
+        data["distancia"] = None
+        print(f"[{utils.get_timestamp()}] Distance reading skipped (sensor not initialized).")
 
-    # Turbidez
+    # Turbidity
     if adc_turbidez:
-        dados["turbidez"] = _processar_leituras_sensor(
-            leituras_func=ler_turbidez_adc,
-            nome_sensor="Turbidez",
-            num_leituras=config.NUM_LEITURAS_TURB,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TURB_S,
-            limite_outlier_percent=config.LIMITE_OUTLIER_TURB,
-            casas_decimais_moda=None
+        data["turbidez"] = _process_sensor_readings( # Keep "turbidez" for key consistency
+            reading_func=read_turbidity_adc,
+            sensor_name="Turbidez",
+            num_readings=config.NUM_LEITURAS_TURB,
+            reading_interval_s=config.INTERVALO_LEITURA_TURB_S,
+            outlier_limit_percent=config.LIMITE_OUTLIER_TURB,
+            mode_decimal_places=None
         )
     else:
-        dados["turbidez"] = None
-        print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
+        data["turbidez"] = None
+        print(f"[{utils.get_timestamp()}] Turbidity reading skipped (sensor not initialized).")
 
     # TDS
     if adc_tds:
-        dados["tds"] = _processar_leituras_sensor(
-            leituras_func=ler_tds_adc,
-            nome_sensor="TDS",
-            num_leituras=config.NUM_LEITURAS_TDS,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TDS_S,
-            limite_outlier_percent=config.LIMITE_OUTLIER_TDS,
-            casas_decimais_moda=None
+        data["tds"] = _process_sensor_readings(
+            reading_func=read_tds_adc,
+            sensor_name="TDS",
+            num_readings=config.NUM_LEITURAS_TDS,
+            reading_interval_s=config.INTERVALO_LEITURA_TDS_S,
+            outlier_limit_percent=config.LIMITE_OUTLIER_TDS,
+            mode_decimal_places=None
         )
     else:
-        dados["tds"] = None
-        print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
+        data["tds"] = None
+        print(f"[{utils.get_timestamp()}] TDS reading skipped (sensor not initialized).")
 
-    print(f"[{utils.agora()}] Dados finais dos sensores (Moda/Média): {dados}")
-    return dados
+    print(f"[{utils.get_timestamp()}] Final sensor data (Mode/Mean): {data}")
+    return data
 
-# --- Nova Função para Leitura de Sensor Específico ---
-def ler_sensor_especifico(nome_do_sensor: str):
+# --- New Function for Specific Sensor Reading ---
+def read_specific_sensor(sensor_name_to_read: str):
     """
-    Lê um sensor específico com base no nome fornecido, usando suas configurações dedicadas.
-    Retorna um dicionário com o dado do sensor ou None se o sensor não for encontrado ou falhar.
-    Ex: {"temperatura": 25.5, "unit": "C"}
+    Reads a specific sensor based on the provided name, using its dedicated settings.
+    Returns a dictionary with the sensor data or None if the sensor is not found or fails.
+    Ex: {"sensor": "temperatura", "valor": 25.5, "unidade": "C"}
     """
-    # Tenta importar led_signals dinamicamente
+    # Try to import led_signals dynamically
     try:
         import led_signals
-        if hasattr(led_signals, 'sinal_leitura_sensores_em_andamento'):
-            led_signals.sinal_leitura_sensores_em_andamento()
+        if hasattr(led_signals, 'signal_sensor_reading_in_progress'): # Corrected function name
+            led_signals.signal_sensor_reading_in_progress()
     except ImportError:
         pass
 
-    print(f"[{utils.agora()}] Iniciando leitura para o sensor: {nome_do_sensor}")
-    valor_sensor = None
-    unidade = None
+    print(f"[{utils.get_timestamp()}] Starting reading for sensor: {sensor_name_to_read}")
+    sensor_value = None
+    unit = None
 
-    if nome_do_sensor == "temperatura":
-        if ds_sensor:  # PC_MODE removido
-            valor_sensor = _processar_leituras_sensor(
-                leituras_func=ler_temperatura_ds18b20,
-                nome_sensor="Temperatura",
-                num_leituras=config.NUM_LEITURAS_TEMP,
-                intervalo_leitura_s=config.INTERVALO_LEITURA_TEMP_S,
-                limite_outlier_percent=config.LIMITE_OUTLIER_TEMP,
-                casas_decimais_moda=1
+    # Using original Portuguese names for keys for consistency with previous data structure,
+    # but function names and variable names are in English.
+    if sensor_name_to_read == "temperatura":
+        if ds_sensor:
+            sensor_value = _process_sensor_readings(
+                reading_func=read_temperature_ds18b20,
+                sensor_name="Temperatura",
+                num_readings=config.NUM_LEITURAS_TEMP,
+                reading_interval_s=config.INTERVALO_LEITURA_TEMP_S,
+                outlier_limit_percent=config.LIMITE_OUTLIER_TEMP,
+                mode_decimal_places=1
             )
-            unidade = "C"
-        else: # Sensor não inicializado
-            print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
-    elif nome_do_sensor == "distancia":
+            unit = "C"
+        else: # Sensor not initialized
+            print(f"[{utils.get_timestamp()}] Temperature reading skipped (sensor not initialized).")
+    elif sensor_name_to_read == "distancia":
         if hcsr04_sensor_pins:
-            valor_sensor = _processar_leituras_sensor(
-                leituras_func=ler_distancia_hcsr04,
-                nome_sensor="Distancia",
-                num_leituras=config.NUM_LEITURAS_DIST,
-                intervalo_leitura_s=config.INTERVALO_LEITURA_DIST_S,
-                limite_outlier_percent=config.LIMITE_OUTLIER_DIST,
-                casas_decimais_moda=0
+            sensor_value = _process_sensor_readings(
+                reading_func=read_distance_hcsr04,
+                sensor_name="Distancia",
+                num_readings=config.NUM_LEITURAS_DIST,
+                reading_interval_s=config.INTERVALO_LEITURA_DIST_S,
+                outlier_limit_percent=config.LIMITE_OUTLIER_DIST,
+                mode_decimal_places=0
             )
-            unidade = "cm"
-        else: # Sensor não inicializado
-            print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
-    elif nome_do_sensor == "turbidez":
+            unit = "cm"
+        else: # Sensor not initialized
+            print(f"[{utils.get_timestamp()}] Distance reading skipped (sensor not initialized).")
+    elif sensor_name_to_read == "turbidez":
         if adc_turbidez:
-            valor_sensor = _processar_leituras_sensor(
-                leituras_func=ler_turbidez_adc,
-                nome_sensor="Turbidez",
-                num_leituras=config.NUM_LEITURAS_TURB,
-                intervalo_leitura_s=config.INTERVALO_LEITURA_TURB_S,
-                limite_outlier_percent=config.LIMITE_OUTLIER_TURB,
-                casas_decimais_moda=None # ADC raw
+            sensor_value = _process_sensor_readings(
+                reading_func=read_turbidity_adc,
+                sensor_name="Turbidez",
+                num_readings=config.NUM_LEITURAS_TURB,
+                reading_interval_s=config.INTERVALO_LEITURA_TURB_S,
+                outlier_limit_percent=config.LIMITE_OUTLIER_TURB,
+                mode_decimal_places=None # ADC raw
             )
-            unidade = "ADC"
-        else: # Sensor não inicializado
-            print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
-    elif nome_do_sensor == "tds":
+            unit = "ADC"
+        else: # Sensor not initialized
+            print(f"[{utils.get_timestamp()}] Turbidity reading skipped (sensor not initialized).")
+    elif sensor_name_to_read == "tds":
         if adc_tds:
-            valor_sensor = _processar_leituras_sensor(
-                leituras_func=ler_tds_adc,
-                nome_sensor="TDS",
-                num_leituras=config.NUM_LEITURAS_TDS,
-                intervalo_leitura_s=config.INTERVALO_LEITURA_TDS_S,
-                limite_outlier_percent=config.LIMITE_OUTLIER_TDS,
-                casas_decimais_moda=None # ADC raw
+            sensor_value = _process_sensor_readings(
+                reading_func=read_tds_adc,
+                sensor_name="TDS",
+                num_readings=config.NUM_LEITURAS_TDS,
+                reading_interval_s=config.INTERVALO_LEITURA_TDS_S,
+                outlier_limit_percent=config.LIMITE_OUTLIER_TDS,
+                mode_decimal_places=None # ADC raw
             )
-            unidade = "ADC"
-        else: # Sensor não inicializado
-            print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
+            unit = "ADC"
+        else: # Sensor not initialized
+            print(f"[{utils.get_timestamp()}] TDS reading skipped (sensor not initialized).")
     else:
-        print(f"[{utils.agora()}] Sensor '{nome_do_sensor}' desconhecido.")
+        print(f"[{utils.get_timestamp()}] Unknown sensor '{sensor_name_to_read}'.")
         return None
 
-    if valor_sensor is not None:
-        print(f"[{utils.agora()}] Leitura final para {nome_do_sensor}: {valor_sensor} {unidade if unidade else ''}")
-        return {"sensor": nome_do_sensor, "valor": valor_sensor, "unidade": unidade}
+    if sensor_value is not None:
+        print(f"[{utils.get_timestamp()}] Final reading for {sensor_name_to_read}: {sensor_value} {unit if unit else ''}")
+        return {"sensor": sensor_name_to_read, "valor": sensor_value, "unidade": unit}
     else:
-        print(f"[{utils.agora()}] Falha ao ler o sensor {nome_do_sensor}.")
+        print(f"[{utils.get_timestamp()}] Failed to read sensor {sensor_name_to_read}.")
         return None
 
 
 if __name__ == '__main__':
-    # Para testar este módulo, certifique-se que config.py e utils.py estão acessíveis
-    # e que os pinos em config.py correspondem ao seu hardware.
-    print("Testando módulo sensor_manager...")
+    # To test this module, ensure config.py and utils.py are accessible
+    # and that the pins in config.py match your hardware.
+    print("Testing sensor_manager module...")
 
-    # Opcional: Importar led_signals para teste visual se estiver usando
+    # Optional: Import led_signals for visual testing if used
     try:
         import led_signals
-        print("led_signals importado para teste visual.")
+        print("led_signals imported for visual test.")
     except ImportError:
-        print("led_signals não encontrado, teste será apenas por print.")
-        led_signals = None # Garante que não dê erro se não existir
+        print("led_signals not found, test will be by print only.")
+        led_signals = None # Ensure no error if it doesn't exist
 
-    # Teste de leitura de todos os sensores
-    resultados = ler_todos_sensores()
+    # Test reading all sensors
+    results = read_all_sensors()
 
-    print("\n--- Resultados Finais do Teste ---")
-    if resultados:
-        for sensor, valor in resultados.items():
-            if valor is not None:
-                print(f"Sensor {sensor}: {valor:.2f}")
+    print("\n--- Final Test Results ---")
+    if results:
+        for sensor, value in results.items():
+            if value is not None:
+                # Attempt to format as float, but handle non-float (e.g. ADC int) gracefully
+                try:
+                    print(f"Sensor {sensor}: {float(value):.2f}")
+                except ValueError:
+                    print(f"Sensor {sensor}: {value}")
+                except TypeError: # Handles if value is None (already checked, but good practice)
+                     print(f"Sensor {sensor}: {value}")
             else:
-                print(f"Sensor {sensor}: Falha na leitura ou não disponível")
+                print(f"Sensor {sensor}: Reading failed or not available")
     else:
-        print("Nenhum dado de sensor foi retornado.")
+        print("No sensor data was returned.")
 
-    # Testes individuais (descomente para testar funções específicas)
-    # print("\nTestando leitura individual de temperatura...")
-    # temp = ler_temperatura_ds18b20()
+    # Individual tests (uncomment to test specific functions)
+    # print("\nTesting individual temperature reading...")
+    # temp = read_temperature_ds18b20()
     # if temp is not None:
-    #     print(f"Temperatura individual: {temp:.2f} C")
+    #     print(f"Individual temperature: {temp:.2f} C")
     # else:
-    #     print("Falha ao ler temperatura individual ou sensor não disponível.")
+    #     print("Failed to read individual temperature or sensor not available.")
 
-    # print("\nTestando leitura individual de distância...")
-    # dist = ler_distancia_hcsr04()
+    # print("\nTesting individual distance reading...")
+    # dist = read_distance_hcsr04()
     # if dist is not None:
-    #     print(f"Distância individual: {dist:.2f} cm")
+    #     print(f"Individual distance: {dist:.2f} cm")
     # else:
-    #     print("Falha ao ler distância individual ou sensor não disponível.")
+    #     print("Failed to read individual distance or sensor not available.")
 
-    # print("\nTestando leitura individual de turbidez (ADC raw)...")
-    # turb = ler_turbidez_adc()
+    # print("\nTesting individual turbidity reading (ADC raw)...")
+    # turb = read_turbidity_adc()
     # if turb is not None:
-    #     print(f"Turbidez individual (ADC): {turb}")
+    #     print(f"Individual turbidity (ADC): {turb}")
     # else:
-    #     print("Falha ao ler turbidez individual ou sensor não disponível.")
+    #     print("Failed to read individual turbidity or sensor not available.")
 
-    # print("\nTestando leitura individual de TDS (ADC raw)...")
-    # tds_val = ler_tds_adc()
+    # print("\nTesting individual TDS reading (ADC raw)...")
+    # tds_val = read_tds_adc()
     # if tds_val is not None:
-    #     print(f"TDS individual (ADC): {tds_val}")
+    #     print(f"Individual TDS (ADC): {tds_val}")
     # else:
-    #     print("Falha ao ler TDS individual ou sensor não disponível.")
+    #     print("Failed to read individual TDS or sensor not available.")
 
-    print("\nFim do teste do sensor_manager.")
+    print("\nEnd of sensor_manager test.")
