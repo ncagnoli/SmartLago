@@ -17,14 +17,14 @@ This project uses a Raspberry Pi Pico W programmed in Micropython to collect sen
 
 The HTTP server exposes the following endpoints for querying sensor data. All endpoints use the `GET` method and do not require parameters in the request.
 
-### `/temperatura`
+### `/temperature`
 
 *   **Method:** `GET`
 *   **Description:** Returns the current reading from the temperature sensor.
 *   **Response (Success - 200 OK):**
     ```json
     {
-      "temperatura": 25.5
+      "temperature": 25.5
     }
     ```
 *   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
@@ -34,14 +34,14 @@ The HTTP server exposes the following endpoints for querying sensor data. All en
     }
     ```
 
-### `/distancia`
+### `/distance`
 
 *   **Method:** `GET`
 *   **Description:** Returns the current reading from the distance sensor.
 *   **Response (Success - 200 OK):**
     ```json
     {
-      "distancia": 10.2
+      "distance": 10.2
     }
     ```
 *   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
@@ -51,14 +51,14 @@ The HTTP server exposes the following endpoints for querying sensor data. All en
     }
     ```
 
-### `/turbidez`
+### `/turbidity`
 
 *   **Method:** `GET`
 *   **Description:** Returns the current reading from the turbidity sensor (raw ADC value).
 *   **Response (Success - 200 OK):**
     ```json
     {
-      "turbidez": 3000
+      "turbidity": 3000
     }
     ```
 *   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
@@ -85,16 +85,16 @@ The HTTP server exposes the following endpoints for querying sensor data. All en
     }
     ```
 
-### `/todos_sensores` (all_sensors)
+### `/all_sensors`
 
 *   **Method:** `GET`
 *   **Description:** Returns the current readings from all configured sensors.
 *   **Response (Success - 200 OK):**
     ```json
     {
-      "temperatura": 25.5,
-      "distancia": 10.2,
-      "turbidez": 3000,
+      "temperature": 25.5,
+      "distance": 10.2,
+      "turbidity": 3000,
       "tds": 1500
     }
     ```

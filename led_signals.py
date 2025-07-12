@@ -5,11 +5,11 @@ import config
 # Onboard LED Initialization
 # The "LED" pin is a common alias on Pico W for the onboard LED.
 try:
-    led_onboard = machine.Pin(config.PIN_LED_ONBOARD, machine.Pin.OUT)
+    led_onboard = machine.Pin(config.ONBOARD_LED_PIN, machine.Pin.OUT) # Use translated config variable
 except TypeError:
-    # Fallback in case config.PIN_LED_ONBOARD is an integer pin number
+    # Fallback in case config.ONBOARD_LED_PIN is an integer pin number
     # This might happen if the user changes the config for, e.g., an external LED
-    led_onboard = machine.Pin(int(config.PIN_LED_ONBOARD), machine.Pin.OUT)
+    led_onboard = machine.Pin(int(config.ONBOARD_LED_PIN), machine.Pin.OUT) # Use translated config variable
 
 
 def _blink_led(count=1, on_duration=0.1, off_duration=0.1):

@@ -185,32 +185,31 @@ def start_server():
             addr_client_str = "unknown client"
 
 # --- Route Handlers ---
-def handle_temperatura_request():
-    """Handler for the /temperatura endpoint."""
-    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /temperatura requested.")
-    result = sensor_manager.read_specific_sensor("temperatura")
-    # Return only the value, keyed by the sensor name
-    return { "temperatura": result.get("valor") } if result and result.get("valor") is not None else None
+def handle_temperature_request():
+    """Handler for the /temperature endpoint."""
+    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /temperature requested.")
+    result = sensor_manager.read_specific_sensor("temperature")
+    return { "temperature": result.get("value") } if result and result.get("value") is not None else None
 
-def handle_distancia_request():
-    """Handler for the /distancia endpoint."""
-    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /distancia requested.")
-    result = sensor_manager.read_specific_sensor("distancia")
-    return { "distancia": result.get("valor") } if result and result.get("valor") is not None else None
+def handle_distance_request():
+    """Handler for the /distance endpoint."""
+    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /distance requested.")
+    result = sensor_manager.read_specific_sensor("distance")
+    return { "distance": result.get("value") } if result and result.get("value") is not None else None
 
-def handle_turbidez_request():
-    """Handler for the /turbidez endpoint."""
-    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /turbidez requested.")
-    result = sensor_manager.read_specific_sensor("turbidez")
-    return { "turbidez": result.get("valor") } if result and result.get("valor") is not None else None
+def handle_turbidity_request():
+    """Handler for the /turbidity endpoint."""
+    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /turbidity requested.")
+    result = sensor_manager.read_specific_sensor("turbidity")
+    return { "turbidity": result.get("value") } if result and result.get("value") is not None else None
 
 def handle_tds_request():
     """Handler for the /tds endpoint."""
     print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /tds requested.")
     result = sensor_manager.read_specific_sensor("tds")
-    return { "tds": result.get("valor") } if result and result.get("valor") is not None else None
+    return { "tds": result.get("value") } if result and result.get("value") is not None else None
 
-def handle_todos_sensores_request():
+def handle_all_sensors_request():
     """
     Handler for the /todos_sensores endpoint.
     Returns a dictionary with readings from all sensors.

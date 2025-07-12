@@ -14,16 +14,16 @@ def run_calibration():
     print(f"[{utils.get_timestamp()}] Starting TDS sensor calibration...")
 
     print(f"[{utils.get_timestamp()}] Requesting TDS reading from sensor_manager...")
-    result = sensor_manager.read_specific_sensor("tds")
+    result = sensor_manager.read_specific_sensor("tds") # 'tds' is already English
 
-    if result and result.get("valor") is not None:
+    if result and result.get("value") is not None: # Changed to 'value'
         print("-" * 30)
         print(f"Sensor Calibration Result: TDS")
         print("-" * 30)
         print(f"Timestamp: {utils.get_timestamp()}")
         print(f"Sensor Name: {result.get('sensor')}")
         # TDS sensor returns raw ADC value (integer)
-        print(f"Measured Value: {result.get('valor')} {result.get('unidade')}")
+        print(f"Measured Value: {result.get('value')} {result.get('unit')}") # Changed to 'value' and 'unit'
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] TDS sensor calibration finished.")
     else:

@@ -14,9 +14,9 @@ def run_calibration():
     print(f"[{utils.get_timestamp()}] Starting distance sensor calibration...")
 
     print(f"[{utils.get_timestamp()}] Requesting distance reading from sensor_manager...")
-    result = sensor_manager.read_specific_sensor("distancia")
+    result = sensor_manager.read_specific_sensor("distance") # Changed to English
 
-    if result and result.get("valor") is not None:
+    if result and result.get("value") is not None: # Changed to 'value'
         print("-" * 30)
         print(f"Sensor Calibration Result: Distance")
         print("-" * 30)
@@ -24,9 +24,9 @@ def run_calibration():
         print(f"Sensor Name: {result.get('sensor')}")
         # HC-SR04 might return float, ensure formatting handles it.
         try:
-            print(f"Measured Value: {float(result.get('valor')):.2f} {result.get('unidade')}")
+            print(f"Measured Value: {float(result.get('value')):.2f} {result.get('unit')}") # Changed to 'value' and 'unit'
         except (ValueError, TypeError):
-            print(f"Measured Value: {result.get('valor')} {result.get('unidade')}")
+            print(f"Measured Value: {result.get('value')} {result.get('unit')}") # Changed to 'value' and 'unit'
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] Distance sensor calibration finished.")
     else:

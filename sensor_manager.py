@@ -15,19 +15,19 @@ import urandom
 ds_sensor = None
 roms = []
 hcsr04_sensor_pins = None
-adc_turbidez = None
-adc_tds = None
+turbidity_adc = None
+tds_adc = None
 
 # DS18B20 Temperature Sensor
 try:
     import onewire
     import ds18x20
-    ow_pin = machine.Pin(config.PIN_DS18B20)
+    ow_pin = machine.Pin(config.DS18B20_PIN)
     ow_bus = onewire.OneWire(ow_pin)
     ds_sensor = ds18x20.DS18X20(ow_bus)
     roms = ds_sensor.scan()
     if not roms:
-        print(f"[{utils.get_timestamp()}] No DS18B20 sensor found on pin {config.PIN_DS18B20}.")
+        print(f"[{utils.get_timestamp()}] No DS18B20 sensor found on pin {config.DS18B20_PIN}.")
         ds_sensor = None
     else:
         print(f"[{utils.get_timestamp()}] DS18B20 sensor found: {roms}")

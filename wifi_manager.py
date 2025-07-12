@@ -14,8 +14,8 @@ def connect_wifi(ssid=None, password=None, attempts=3, connection_timeout=15):
     global wlan
 
     # Use SSID and PASSWORD from config.py if not provided
-    _ssid = ssid if ssid else config.SSID
-    _password = password if password else config.SENHA # Assuming SENHA is password in config
+    _ssid = ssid if ssid else config.WIFI_SSID
+    _password = password if password else config.WIFI_PASSWORD
 
     if not wlan:
         wlan = network.WLAN(network.STA_IF)
