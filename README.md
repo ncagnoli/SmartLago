@@ -1,73 +1,67 @@
-# Projeto de Monitoramento com Raspberry Pi Pico W e Micropython
+# Monitoring Project with Raspberry Pi Pico W and Micropython
 
-Este projeto utiliza um Raspberry Pi Pico W programado em Micropython para coletar dados de sensores e enviá-los para um sistema de monitoramento.
+This project uses a Raspberry Pi Pico W programmed in Micropython to collect sensor data and send it to a monitoring system.
 
-## Funcionalidades
+## Features
 
-*   Leitura de dados dos seguintes sensores:
-    *   Temperatura (DS18B20)
-    *   Distância (HC-SR04)
-    *   Turbidez (Sensor de turbidez analógico)
-    *   Sólidos Totais Dissolvidos (TDS)
-*   Conexão à rede Wi-Fi para envio de dados.
-*   Sinalização de status e operações através do LED onboard.
-*   Servidor HTTP embarcado para expor os dados dos sensores através de endpoints JSON.
+*   Reads data from the following sensors:
+    *   Temperature (DS18B20)
+    *   Distance (HC-SR04)
+    *   Turbidity (Analog turbidity sensor)
+    *   Total Dissolved Solids (TDS)
+*   Connects to a Wi-Fi network for data transmission.
+*   Signals status and operations via the onboard LED.
+*   Embedded HTTP server to expose sensor data through JSON endpoints.
 
-## Endpoints HTTP
+## HTTP Endpoints
 
-O servidor HTTP expõe os seguintes endpoints para consulta dos dados dos sensores. Todos os endpoints utilizam o método `GET` e não requerem parâmetros na requisição.
+The HTTP server exposes the following endpoints for querying sensor data. All endpoints use the `GET` method and do not require parameters in the request.
 
-### `/temperatura`
+### `/temperature`
 
-*   **Método:** `GET`
-*   **Descrição:** Retorna a leitura atual do sensor de temperatura.
-*   **Resposta (Sucesso - 200 OK):**
+*   **Method:** `GET`
+*   **Description:** Returns the current reading from the temperature sensor.
+*   **Response (Success - 200 OK):**
     ```json
     {
-      "sensor": "temperatura",
-      "valor": 25.5,
-      "unidade": "C"
+      "temperature": 25.5
     }
     ```
-*   **Resposta (Erro - 500 Internal Server Error):** Se a leitura do sensor falhar.
-    ```json
-    {
-      "error": "Failed to read sensor or no data"
-    }
-    ```
-
-### `/distancia`
-
-*   **Método:** `GET`
-*   **Descrição:** Retorna a leitura atual do sensor de distância.
-*   **Resposta (Sucesso - 200 OK):**
-    ```json
-    {
-      "sensor": "distancia",
-      "valor": 10.2,
-      "unidade": "cm"
-    }
-    ```
-*   **Resposta (Erro - 500 Internal Server Error):** Se a leitura do sensor falhar.
+*   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
     ```json
     {
       "error": "Failed to read sensor or no data"
     }
     ```
 
-### `/turbidez`
+### `/distance`
 
-*   **Método:** `GET`
-*   **Descrição:** Retorna a leitura atual do sensor de turbidez (valor ADC bruto).
-*   **Resposta (Sucesso - 200 OK):**
+*   **Method:** `GET`
+*   **Description:** Returns the current reading from the distance sensor.
+*   **Response (Success - 200 OK):**
     ```json
     {
-      "sensor": "turbidez",
-      "valor": 3000,
-      "unidade": "ADC"
+      "distance": 10.2
     }
     ```
-*   **Resposta (Erro - 500 Internal Server Error):** Se a leitura do sensor falhar.
+*   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
+    ```json
+    {
+      "error": "Failed to read sensor or no data"
+    }
+    ```
+
+### `/turbidity`
+
+*   **Method:** `GET`
+*   **Description:** Returns the current reading from the turbidity sensor (raw ADC value).
+*   **Response (Success - 200 OK):**
+    ```json
+    {
+      "turbidity": 3000
+    }
+    ```
+*   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
     ```json
     {
       "error": "Failed to read sensor or no data"
@@ -76,84 +70,103 @@ O servidor HTTP expõe os seguintes endpoints para consulta dos dados dos sensor
 
 ### `/tds`
 
-*   **Método:** `GET`
-*   **Descrição:** Retorna a leitura atual do sensor de TDS (Sólidos Totais Dissolvidos - valor ADC bruto).
-*   **Resposta (Sucesso - 200 OK):**
+*   **Method:** `GET`
+*   **Description:** Returns the current reading from the TDS (Total Dissolved Solids) sensor (raw ADC value).
+*   **Response (Success - 200 OK):**
     ```json
     {
-      "sensor": "tds",
-      "valor": 1500,
-      "unidade": "ADC"
-    }
-    ```
-*   **Resposta (Erro - 500 Internal Server Error):** Se a leitura do sensor falhar.
-    ```json
-    {
-      "error": "Failed to read sensor or no data"
-    }
-    ```
-
-### `/todos_sensores`
-
-*   **Método:** `GET`
-*   **Descrição:** Retorna as leituras atuais de todos os sensores configurados.
-*   **Resposta (Sucesso - 200 OK):**
-    ```json
-    {
-      "temperatura": 25.5,
-      "distancia": 10.2,
-      "turbidez": 3000,
       "tds": 1500
     }
     ```
-    *Nota: Se a leitura de um sensor específico falhar, seu valor no JSON será `null`.*
-*   **Resposta (Erro - 500 Internal Server Error):** Em caso de falha crítica ao tentar ler os sensores (raro, pois falhas individuais são tratadas com `null`).
+*   **Response (Error - 500 Internal Server Error):** If reading the sensor fails.
     ```json
     {
       "error": "Failed to read sensor or no data"
     }
     ```
 
-### Outras Respostas HTTP Comuns
+### `/all_sensors`
 
-*   **`400 Bad Request`**: Se a requisição HTTP for malformada.
+*   **Method:** `GET`
+*   **Description:** Returns the current readings from all configured sensors.
+*   **Response (Success - 200 OK):**
     ```json
-    {"error": "Bad Request", "detail": "Descrição do erro"}
+    {
+      "temperature": 25.5,
+      "distance": 10.2,
+      "turbidity": 3000,
+      "tds": 1500
+    }
     ```
-*   **`404 Not Found`**: Se o caminho (path) solicitado não existir.
+    *Note: If reading a specific sensor fails, its value in the JSON will be `null`.*
+*   **Response (Error - 500 Internal Server Error):** In case of a critical failure when trying to read sensors (rare, as individual failures are handled with `null`).
+    ```json
+    {
+      "error": "Failed to read sensor or no data"
+    }
+    ```
+
+### Other Common HTTP Responses
+
+*   **`400 Bad Request`**: If the HTTP request is malformed.
+    ```json
+    {"error": "Bad Request", "detail": "Error description"}
+    ```
+*   **`404 Not Found`**: If the requested path does not exist.
     ```json
     {"error": "Not Found"}
     ```
-*   **`405 Method Not Allowed`**: Se um método HTTP diferente de `GET` for utilizado.
+*   **`405 Method Not Allowed`**: If an HTTP method other than `GET` is used.
     ```json
     {"error": "Method Not Allowed"}
     ```
 
-## Estrutura do Código
+## Code Structure
 
-O código é modularizado para melhor organização e manutenção, com os seguintes arquivos principais:
+The code is modularized for better organization and maintenance, with the following main files:
 
-*   `main.py`: Script principal que inicializa o Wi-Fi e o servidor HTTP.
-*   `config.py`: Armazena todas as configurações do projeto (credenciais Wi-Fi, pinos dos sensores, parâmetros de leitura, configurações do servidor HTTP, etc.).
-*   `wifi_manager.py`: Gerencia a conexão com a rede Wi-Fi.
-*   `sensor_manager.py`: Responsável pela interface com os sensores, leitura dos dados e processamento (filtragem, moda/média).
-*   `http_server.py`: Implementa o servidor HTTP e o roteamento para os handlers dos sensores.
-*   `led_signals.py`: Controla os sinais visuais do LED para indicar diferentes estados do sistema.
-*   `utils.py`: Contém funções utilitárias (ex: formatação de timestamp).
+*   `main.py`: Main script that initializes Wi-Fi and the HTTP server.
+*   `config.py`: Stores all project configurations (Wi-Fi credentials, sensor pins, reading parameters, HTTP server settings, etc.).
+*   `wifi_manager.py`: Manages the Wi-Fi connection.
+*   `sensor_manager.py`: Responsible for interfacing with sensors, reading data, and processing (filtering, mode/mean).
+*   `http_server.py`: Implements the HTTP server and routing to sensor handlers.
+*   `led_signals.py`: Controls LED visual signals to indicate different system states.
+*   `utils.py`: Contains utility functions (e.g., timestamp formatting).
+*   `calibrate_temperature.py`, `calibrate_distance.py`, `calibrate_turbidity.py`, `calibrate_tds.py`: Individual scripts for testing and calibrating each sensor.
+
+## Calibration Scripts
+
+A set of calibration scripts are provided to help test individual sensors and their data processing logic. These scripts can be run directly on the device.
+
+To run a calibration script, connect to the device's REPL (e.g., using Thonny or `mpremote`) and execute the desired script. For example:
+
+```bash
+# Using mpremote
+mpremote run calibrate_temperature.py
+```
+
+Or from Thonny, open the file and run it.
+
+Each script will:
+1.  Perform multiple readings for the specific sensor.
+2.  Calculate the mode/mean of these readings.
+3.  Print the processed sensor value to the terminal.
+
+This allows for verification of sensor functionality and the accuracy of the reading logic independently of the HTTP server.
 
 ## Hardware
 
 *   Raspberry Pi Pico W
-*   Sensor de Temperatura DS18B20
-*   Sensor Ultrassônico de Distância HC-SR04
-*   Sensor de Turbidez Analógico
-*   Sensor de Sólidos Totais Dissolvidos (TDS)
-*   Resistores e jumpers conforme necessário para as conexões.
+*   DS18B20 Temperature Sensor
+*   HC-SR04 Ultrasonic Distance Sensor
+*   Analog Turbidity Sensor
+*   Total Dissolved Solids (TDS) Sensor
+*   Resistors and jumpers as needed for connections.
 
-## Próximos Passos
+## Next Steps
 
-1.  Implementar tratamento mais robusto de erros e reconexão Wi-Fi.
-2.  Adicionar mais testes unitários e de integração.
-3.  Explorar a conversão dos valores ADC de Turbidez e TDS para unidades mais significativas (NTU, ppm), se aplicável e com calibração.
-4.  Otimizar o consumo de energia.
-5.  Adicionar novas funcionalidades conforme necessário.
+1.  Implement more robust error handling and Wi-Fi reconnection.
+2.  Add more unit and integration tests.
+3.  Explore converting ADC values for Turbidity and TDS to more meaningful units (NTU, ppm), if applicable and with calibration.
+4.  Optimize power consumption.
+5.  Add new features as needed.
