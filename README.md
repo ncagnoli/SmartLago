@@ -163,6 +163,17 @@ This allows for verification of sensor functionality and the accuracy of the rea
 *   Total Dissolved Solids (TDS) Sensor
 *   Resistors and jumpers as needed for connections.
 
+## Robustness
+
+### Watchdog Timer
+
+To ensure reliability on potentially unstable hardware, this project implements a hardware Watchdog Timer (WDT).
+
+*   The WDT is initialized in `main.py` with a timeout of 8 seconds.
+*   The main loop of the HTTP server in `http_server.py` is responsible for feeding the watchdog regularly.
+*   If the main loop freezes for any reason (e.g., a software bug, a hardware issue causing a process to hang), the watchdog will not be fed.
+*   After 8 seconds of not being fed, the WDT automatically triggers a hard reset of the device, forcing a reboot and allowing the system to recover.
+
 ## Next Steps
 
 1.  Implement more robust error handling and Wi-Fi reconnection.

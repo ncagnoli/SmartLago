@@ -4,10 +4,16 @@ import utils
 import wifi_manager
 import http_server # Imported here as it's called directly in the main flow
 import led_signals
+import machine # Import machine for WDT
 # sensor_manager is used by http_server, not directly by main.py in the main flow
 
 if __name__ == "__main__":
-    led_signals.signal_script_start() # Corrected function name
+    # Initialize the Watchdog Timer with an 8-second timeout.
+    # If the WDT is not fed within 8 seconds, the device will reset.
+    wdt = machine.WDT(timeout=8000)
+    wdt.feed()
+
+    led_signals.signal_script_start()
 
     # 1. Initial Wi-Fi Connection
     print(f"[{utils.get_timestamp()}] Attempting initial Wi-Fi connection to '{config.WIFI_SSID}'...")
@@ -24,12 +30,13 @@ if __name__ == "__main__":
     # This loop runs indefinitely, attempting to keep the server operational.
     while True:
         if wifi_manager.is_connected():
+            wdt.feed() # Feed the watchdog before starting the server loop
             print(f"[{utils.get_timestamp()}] Wi-Fi connected. Attempting to start/check HTTP server...")
 
             # http_server.start_server() is blocking and contains its own listening loop.
             # It only returns False if it cannot start (e.g., socket error).
             # If it stops due to an unhandled internal exception, the script might exit start_server.
-            server_started_successfully = http_server.start_server()
+            server_started_successfully = http_server.start_server(wdt)
 
             if not server_started_successfully:
                 print(f"[{utils.get_timestamp()}] HTTP server failed to start (e.g., bind error). Check port configuration.")

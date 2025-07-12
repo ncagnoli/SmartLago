@@ -107,9 +107,10 @@ def handle_request(request_data, conn):
         print(f"[{utils.get_timestamp()}] [HTTP_SERVER] Unexpected error sending response for {path}: {e}")
 
 
-def start_server():
+def start_server(wdt):
     """
     Initializes the HTTP server and enters the listening loop for connections.
+    Feeds the provided watchdog timer within the loop to prevent resets.
     Returns False if the server cannot start.
     """
     if not wifi_manager.is_connected():
@@ -139,6 +140,8 @@ def start_server():
     addr_client_str = "unknown client"
     while True:
         try:
+            if wdt:
+                wdt.feed() # Feed the watchdog at the start of each loop iteration
             client_conn, addr_client = server_socket.accept()
             addr_client_str = f"{addr_client[0]}:{addr_client[1]}"
             client_conn.settimeout(config.HTTP_CLIENT_TIMEOUT_S)
@@ -229,6 +232,13 @@ route_handlers["/all_sensors"] = handle_all_sensors_request
 if __name__ == "__main__":
     print(f"[{utils.get_timestamp()}] Testing http_server.py directly...")
 
+    # Create a dummy WDT object for testing that has a no-op feed() method
+    class DummyWDT:
+        def feed(self):
+            pass
+
+    dummy_wdt = DummyWDT()
+
     if not wifi_manager.is_connected():
         print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Wi-Fi not connected. Attempting to connect...")
         if not wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
@@ -254,7 +264,7 @@ if __name__ == "__main__":
         print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/all_sensors")
 
 
-        if not start_server():
+        if not start_server(dummy_wdt): # Pass the dummy wdt object for testing
              print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Server failed to start.")
     else:
         print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Cannot start server test without Wi-Fi.")
