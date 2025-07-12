@@ -23,7 +23,7 @@ try:
     else:
         print(f"[{utils.get_timestamp()}] DS18B20 sensor initialized on pin {config.DS18B20_PIN}.")
 except ImportError:
-    print(f"[{utils.get_timestamp()}] onewire/ds18x20 libraries not found. Temperature sensor disabled.")
+    print(f"[{utils.get_timestamp()}] onewire/ds18x20 libraries not found.")
     ds_sensor = None
 except Exception as e:
     print(f"[{utils.get_timestamp()}] Error initializing DS18B20 sensor: {e}")

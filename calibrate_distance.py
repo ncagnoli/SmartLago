@@ -14,9 +14,9 @@ def run_calibration():
     print(f"[{utils.get_timestamp()}] Starting distance sensor calibration...")
 
     print(f"[{utils.get_timestamp()}] Requesting distance reading from sensor_manager...")
-    result = sensor_manager.read_specific_sensor("distance") # Changed to English
+    result = sensor_manager.read_specific_sensor("distance")
 
-    if result and result.get("value") is not None: # Changed to 'value'
+    if result and result.get("value") is not None:
         print("-" * 30)
         print(f"Sensor Calibration Result: Distance")
         print("-" * 30)
@@ -24,9 +24,9 @@ def run_calibration():
         print(f"Sensor Name: {result.get('sensor')}")
         # HC-SR04 might return float, ensure formatting handles it.
         try:
-            print(f"Measured Value: {float(result.get('value')):.2f} {result.get('unit')}") # Changed to 'value' and 'unit'
+            print(f"Measured Value: {float(result.get('value')):.2f} {result.get('unit')}")
         except (ValueError, TypeError):
-            print(f"Measured Value: {result.get('value')} {result.get('unit')}") # Changed to 'value' and 'unit'
+            print(f"Measured Value: {result.get('value')} {result.get('unit')}")
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] Distance sensor calibration finished.")
     else:
@@ -34,5 +34,5 @@ def run_calibration():
         print("Please check sensor connections and sensor_manager.py initialization.")
 
 if __name__ == "__main__":
-    time.sleep(2) # Delay for board initialization/terminal connection
+    time.sleep(2)
     run_calibration()

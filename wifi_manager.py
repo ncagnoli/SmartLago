@@ -21,7 +21,7 @@ def connect_wifi(ssid=None, password=None, attempts=3, connection_timeout=15):
     if not wlan.active():
         print(f"[{utils.get_timestamp()}] Activating Wi-Fi interface...")
         wlan.active(True)
-        time.sleep(1)
+        time.sleep(2)
 
     if wlan.isconnected():
         print(f"[{utils.get_timestamp()}] Wi-Fi is already connected. IP: {wlan.ifconfig()[0]}")
@@ -40,7 +40,7 @@ def connect_wifi(ssid=None, password=None, attempts=3, connection_timeout=15):
                     print(f"[{utils.get_timestamp()}] Timeout ({connection_timeout}s) on attempt {attempt + 1}.")
                     break
                 print(f"[{utils.get_timestamp()}] Waiting for connection... Status: {wlan.status()}")
-                time.sleep(1)
+                time.sleep(2)
 
             if wlan.isconnected():
                 print(f"[{utils.get_timestamp()}] Wi-Fi connected successfully!")

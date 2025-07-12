@@ -42,7 +42,6 @@ def signal_data_send(success: bool):
 def signal_general_error():
     """Signals a general/fatal error."""
     print("[LED] Signal: General Error")
-    # SOS-like sequence
     for _ in range(3):
         _blink_led(count=3, on_duration=0.05, off_duration=0.05) # S
         time.sleep(0.1)

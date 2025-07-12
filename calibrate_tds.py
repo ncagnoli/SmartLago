@@ -14,16 +14,16 @@ def run_calibration():
     print(f"[{utils.get_timestamp()}] Starting TDS sensor calibration...")
 
     print(f"[{utils.get_timestamp()}] Requesting TDS reading from sensor_manager...")
-    result = sensor_manager.read_specific_sensor("tds") # 'tds' is already English
+    result = sensor_manager.read_specific_sensor("tds")
 
-    if result and result.get("value") is not None: # Changed to 'value'
+    if result and result.get("value") is not None:
         print("-" * 30)
         print(f"Sensor Calibration Result: TDS")
         print("-" * 30)
         print(f"Timestamp: {utils.get_timestamp()}")
         print(f"Sensor Name: {result.get('sensor')}")
         # TDS sensor returns raw ADC value (integer)
-        print(f"Measured Value: {result.get('value')} {result.get('unit')}") # Changed to 'value' and 'unit'
+        print(f"Measured Value: {result.get('value')} {result.get('unit')}")
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] TDS sensor calibration finished.")
     else:
@@ -31,5 +31,5 @@ def run_calibration():
         print("Please check sensor connections and sensor_manager.py initialization.")
 
 if __name__ == "__main__":
-    time.sleep(2) # Delay for board initialization/terminal connection
+    time.sleep(2)
     run_calibration()

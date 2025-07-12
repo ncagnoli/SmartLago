@@ -8,7 +8,6 @@ import led_signals
 if __name__ == "__main__":
     led_signals.signal_script_start()
 
-    # Initial Wi-Fi Connection Attempt
     print(f"[{utils.get_timestamp()}] Attempting initial Wi-Fi connection to '{config.WIFI_SSID}'...")
     if wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
         led_signals.signal_wifi_status(True)
@@ -17,7 +16,6 @@ if __name__ == "__main__":
         led_signals.signal_wifi_status(False)
         print(f"[{utils.get_timestamp()}] Initial Wi-Fi connection failed. Entering recovery loop...")
 
-    # Main loop: Manages server operation and Wi-Fi reconnection
     while True:
         if wifi_manager.is_connected():
             print(f"[{utils.get_timestamp()}] Wi-Fi connected. Starting HTTP server...")
