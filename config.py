@@ -2,25 +2,37 @@
 SSID = "Suryland"  # Nome da rede Wi-Fi
 SENHA = "AvengersAssemble2020@@"  # Senha da rede Wi-Fi
 
-# === API/Zabbix ===
-# API_URL = "http://149.28.230.181/adapter/resources/95d80ef9-3670-4f50-a386-bbf6a9329de4/data"  # URL da API (antigo)
-ZABBIX_SERVER = "http://zbv.1n0v.tech"  # IP ou hostname do servidor Zabbix
-ZABBIX_PORT = 10051  # Porta padrão do Zabbix sender
-ZABBIX_HOST = "SmartLago" # Nome do host no Zabbix para este dispositivo
+# === Configurações do Servidor HTTP ===
+HTTP_PORT = 80 # Porta padrão para HTTP
+HTTP_MAX_PENDING_CONN = 5 # Número máximo de conexões pendentes no socket do servidor
+HTTP_CLIENT_TIMEOUT_S = 10 # Timeout em segundos para operações de socket com o cliente (recv, send)
+HTTP_MAX_REQUEST_SIZE = 1024 # Tamanho máximo em bytes da requisição HTTP a ser lida
 
 # === Intervalos ===
-INTERVALO_LOOP_PRINCIPAL = 30  # Tempo entre ciclos de leitura/envio (segundos)
-INTERVALO_LEITURA_TEMP = 1  # Intervalo entre leituras de temperatura (segundos)
-INTERVALO_LEITURA_DIST = 1  # Intervalo entre leituras de distância (segundos)
-INTERVALO_LEITURA_TURB = 1  # Intervalo entre leituras de turbidez (segundos)
-INTERVALO_LEITURA_TDS = 1   # Intervalo entre leituras de TDS (segundos) - Adicionado
+# INTERVALO_LOOP_PRINCIPAL foi substituído pela lógica do servidor HTTP e INTERVALO_HEARTBEAT_MAIN
+INTERVALO_HEARTBEAT_MAIN = 5 # Intervalo para o loop de manutenção em main.py (segundos)
+INTERVALO_RECONEXAO_WIFI = 60 # Intervalo para tentar reconectar ao Wi-Fi se cair (segundos)
 
-# === Parâmetros de Leitura e Envio ===
-NUM_LEITURAS = 10  # Número de leituras por sensor para média
-MAX_REENVIO_ZABBIX = 5  # Tentativas de reenvio dos dados para o Zabbix
+# Configurações de leitura por sensor (serão usadas pelos endpoints)
+# Cada sensor terá: NUM_LEITURAS_X, INTERVALO_LEITURA_X_S
+# Exemplo para temperatura:
+NUM_LEITURAS_TEMP = 10
+INTERVALO_LEITURA_TEMP_S = 1 # Intervalo entre as leituras individuais para compor uma medição final
+
+NUM_LEITURAS_DIST = 10
+INTERVALO_LEITURA_DIST_S = 1
+
+NUM_LEITURAS_TURB = 10
+INTERVALO_LEITURA_TURB_S = 1
+
+NUM_LEITURAS_TDS = 10
+INTERVALO_LEITURA_TDS_S = 1 # Intervalo entre as leituras individuais de TDS
+
+# MAX_REENVIO_ZABBIX não é mais necessário
 
 # === Limites de Outlier para Sensores ===
 # Valores em percentual (ex: 0.10 para 10%)
+# Estes podem ser globais ou por sensor, se necessário.
 LIMITE_OUTLIER_TEMP = 0.10
 LIMITE_OUTLIER_DIST = 0.50
 LIMITE_OUTLIER_TURB = 0.20
@@ -45,18 +57,11 @@ PIN_TDS_ADC = 27 # ADC1 - Exemplo, ajustar se necessário
 
 # === Arquivos de Log/Cache ===
 ARQUIVO_FALHAS_LOG = "falhas.log"
-ARQUIVO_CACHE_DADOS = "cache_zabbix.db" # Nome alterado para refletir Zabbix
+# ARQUIVO_CACHE_DADOS não é mais necessário com a remoção do Zabbix e sua lógica de cache
 
 # === Debugging ===
 DEBUG_MODE = True # Ativa/desativa mensagens de debug adicionais
-PC_MODE = True  # True para simular leituras de sensor no PC (sem hardware real)
+# PC_MODE foi removido. O código agora assume que está rodando em hardware MicroPython.
 
 print("Configurações carregadas de config.py")
-# Se PC_MODE for True, pode ser útil ajustar outros valores para teste rápido,
-# como INTERVALO_LOOP_PRINCIPAL.
-if PC_MODE:
-    print("!!! ATENÇÃO: MODO PC ATIVADO - SENSORES SERÃO SIMULADOS !!!")
-    # Exemplo: reduzir intervalo para testes mais rápidos no PC
-    # INTERVALO_LOOP_PRINCIPAL = 5
-    # NUM_LEITURAS = 3 # Menos leituras para simulação rápida
-    pass
+# A lógica condicional para PC_MODE foi removida.

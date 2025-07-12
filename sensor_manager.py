@@ -2,84 +2,69 @@ import time
 import config
 import utils
 
-# Tenta importar 'machine' para hardware real, se falhar, estamos provavelmente no PC
-try:
-    import machine
-    # Se 'machine' importou, não estamos em PC_MODE forçado por falta de 'machine'
-except ImportError:
-    if not config.PC_MODE:
-        print(f"[{utils.agora()}] ATENÇÃO: Módulo 'machine' não encontrado. Forçando PC_MODE.")
-        config.PC_MODE = True # Força PC_MODE se machine não existe e não estava já setado
+import machine # Importa machine diretamente, pois é essencial para o hardware.
+# Se machine não estiver disponível, o dispositivo não é um MicroPython e este código não deveria rodar.
 
-# Importar urandom para simulação, ou random como fallback para PC
-try:
-    import urandom
-except ImportError:
-    import random as urandom # usa random do python padrão se urandom não existir
+# Remover a lógica de fallback para 'random' se 'urandom' não estiver disponível,
+# pois 'urandom' é o padrão em MicroPython. Se não estiver lá, é um problema de ambiente.
+import urandom
 
-# --- Inicialização dos Sensores (apenas se não estiver em PC_MODE) ---
+# --- Inicialização dos Sensores ---
+# A inicialização agora ocorre independentemente de PC_MODE,
+# pois PC_MODE está sendo removido. Erros de hardware serão reportados.
 ds_sensor = None
 roms = []
 hcsr04_sensor_pins = None
 adc_turbidez = None
 adc_tds = None
 
-if not config.PC_MODE:
-    # Sensor de Temperatura DS18B20
-    try:
-        import onewire
-        import ds18x20
-        ow_pin = machine.Pin(config.PIN_DS18B20)
-        ow_bus = onewire.OneWire(ow_pin)
-        ds_sensor = ds18x20.DS18X20(ow_bus)
-        roms = ds_sensor.scan()
-        if not roms:
-            print(f"[{utils.agora()}] Nenhum sensor DS18B20 encontrado no pino {config.PIN_DS18B20}.")
-            ds_sensor = None # Marca como não disponível
-        else:
-            print(f"[{utils.agora()}] Sensor DS18B20 encontrado: {roms}")
-    except ImportError:
-        print(f"[{utils.agora()}] Micropython-onewire ou ds18x20 não instalado. Sensor de temperatura desabilitado.")
+# Sensor de Temperatura DS18B20
+try:
+    import onewire
+    import ds18x20
+    ow_pin = machine.Pin(config.PIN_DS18B20)
+    ow_bus = onewire.OneWire(ow_pin)
+    ds_sensor = ds18x20.DS18X20(ow_bus)
+    roms = ds_sensor.scan()
+    if not roms:
+        print(f"[{utils.agora()}] Nenhum sensor DS18B20 encontrado no pino {config.PIN_DS18B20}.")
         ds_sensor = None
-    except Exception as e: # Captura machine.Pin() error se o pino for inválido
-        print(f"[{utils.agora()}] Erro ao inicializar sensor DS18B20: {e}")
-        ds_sensor = None
+    else:
+        print(f"[{utils.agora()}] Sensor DS18B20 encontrado: {roms}")
+except ImportError:
+    print(f"[{utils.agora()}] Bibliotecas onewire/ds18x20 não encontradas. Sensor de temperatura desabilitado.")
+    ds_sensor = None
+except Exception as e:
+    print(f"[{utils.agora()}] Erro ao inicializar sensor DS18B20: {e}")
+    ds_sensor = None
 
-    # Sensor de Distância HC-SR04
-    try:
-        trigger_pin = machine.Pin(config.PIN_HCSR04_TRIGGER, machine.Pin.OUT)
-        echo_pin = machine.Pin(config.PIN_HCSR04_ECHO, machine.Pin.IN)
-        hcsr04_sensor_pins = {"trigger": trigger_pin, "echo": echo_pin}
-        print(f"[{utils.agora()}] Sensor HC-SR04 inicializado (Trigger: {config.PIN_HCSR04_TRIGGER}, Echo: {config.PIN_HCSR04_ECHO}).")
-    except Exception as e:
-        print(f"[{utils.agora()}] Erro ao inicializar sensor HC-SR04: {e}")
-        hcsr04_sensor_pins = None
+# Sensor de Distância HC-SR04
+try:
+    trigger_pin = machine.Pin(config.PIN_HCSR04_TRIGGER, machine.Pin.OUT)
+    echo_pin = machine.Pin(config.PIN_HCSR04_ECHO, machine.Pin.IN)
+    hcsr04_sensor_pins = {"trigger": trigger_pin, "echo": echo_pin}
+    print(f"[{utils.agora()}] Sensor HC-SR04 inicializado (Trigger: {config.PIN_HCSR04_TRIGGER}, Echo: {config.PIN_HCSR04_ECHO}).")
+except Exception as e:
+    print(f"[{utils.agora()}] Erro ao inicializar sensor HC-SR04: {e}")
+    hcsr04_sensor_pins = None
 
-    # Sensor de Turbidez (ADC)
-    try:
-        adc_turbidez = machine.ADC(machine.Pin(config.PIN_TURBIDEZ_ADC))
-        print(f"[{utils.agora()}] Sensor de Turbidez ADC inicializado no pino {config.PIN_TURBIDEZ_ADC}.")
-    except Exception as e:
-        print(f"[{utils.agora()}] Erro ao inicializar ADC para Turbidez: {e}")
-        adc_turbidez = None
+# Sensor de Turbidez (ADC)
+try:
+    adc_turbidez = machine.ADC(machine.Pin(config.PIN_TURBIDEZ_ADC))
+    print(f"[{utils.agora()}] Sensor de Turbidez ADC inicializado no pino {config.PIN_TURBIDEZ_ADC}.")
+except Exception as e:
+    print(f"[{utils.agora()}] Erro ao inicializar ADC para Turbidez: {e}")
+    adc_turbidez = None
 
-    # Sensor de TDS (ADC)
-    try:
-        adc_tds = machine.ADC(machine.Pin(config.PIN_TDS_ADC))
-        print(f"[{utils.agora()}] Sensor de TDS ADC inicializado no pino {config.PIN_TDS_ADC}.")
-    except Exception as e:
-        print(f"[{utils.agora()}] Erro ao inicializar ADC para TDS: {e}")
-        adc_tds = None
-else:
-    print(f"[{utils.agora()}] [PC_MODE] Inicialização de hardware dos sensores pulada.")
+# Sensor de TDS (ADC)
+try:
+    adc_tds = machine.ADC(machine.Pin(config.PIN_TDS_ADC))
+    print(f"[{utils.agora()}] Sensor de TDS ADC inicializado no pino {config.PIN_TDS_ADC}.")
+except Exception as e:
+    print(f"[{utils.agora()}] Erro ao inicializar ADC para TDS: {e}")
+    adc_tds = None
 
-# --- Funções de Leitura Individual dos Sensores ---
-
-def _simular_leitura(min_val, max_val, decimals=2):
-    """Gera um valor aleatório para simulação."""
-    val = urandom.uniform(min_val, max_val)
-    return round(val, decimals)
-
+# A função _simular_leitura é removida pois PC_MODE foi abolido.
 # --- Funções de Cálculo Estatístico ---
 
 def _calcular_moda(leituras: list, округление_до_casas_decimais=None):
@@ -137,13 +122,10 @@ def _calcular_moda(leituras: list, округление_до_casas_decimais=None
 
 
 def ler_temperatura_ds18b20():
-    """Lê a temperatura do sensor DS18B20 ou simula se PC_MODE=True."""
-    if config.PC_MODE:
-        sim_temp = _simular_leitura(15.0, 30.0)
-        #print(f"[{utils.agora()}] [PC_MODE] Temperatura simulada: {sim_temp:.2f} °C")
-        return sim_temp
-
+    """Lê a temperatura do sensor DS18B20."""
+    # A simulação PC_MODE foi removida. Esta função agora sempre tenta ler o hardware.
     if not ds_sensor or not roms:
+        print(f"[{utils.agora()}] Sensor DS18B20 não inicializado ou não encontrado.")
         return None
     try:
         ds_sensor.convert_temp()
@@ -155,13 +137,10 @@ def ler_temperatura_ds18b20():
         return None
 
 def ler_distancia_hcsr04():
-    """Lê a distância do sensor HC-SR04 ou simula se PC_MODE=True."""
-    if config.PC_MODE:
-        sim_dist = _simular_leitura(10.0, 200.0)
-        #print(f"[{utils.agora()}] [PC_MODE] Distância simulada: {sim_dist:.2f} cm")
-        return sim_dist
-
+    """Lê a distância do sensor HC-SR04."""
+    # A simulação PC_MODE foi removida.
     if not hcsr04_sensor_pins:
+        print(f"[{utils.agora()}] Sensor HC-SR04 não inicializado.")
         return None
     trigger = hcsr04_sensor_pins["trigger"]
     echo = hcsr04_sensor_pins["echo"]
@@ -180,13 +159,10 @@ def ler_distancia_hcsr04():
         return None
 
 def ler_turbidez_adc():
-    """Lê o valor bruto do ADC para turbidez ou simula se PC_MODE=True."""
-    if config.PC_MODE:
-        sim_turb = _simular_leitura(0, 4000) # ADC raw (0-65535, mas faixa típica)
-        #print(f"[{utils.agora()}] [PC_MODE] Turbidez ADC simulada: {sim_turb}")
-        return sim_turb
-
+    """Lê o valor bruto do ADC para turbidez."""
+    # A simulação PC_MODE foi removida.
     if not adc_turbidez:
+        print(f"[{utils.agora()}] Sensor de Turbidez (ADC) não inicializado.")
         return None
     try:
         return adc_turbidez.read_u16()
@@ -195,13 +171,10 @@ def ler_turbidez_adc():
         return None
 
 def ler_tds_adc():
-    """Lê o valor bruto do ADC para TDS ou simula se PC_MODE=True."""
-    if config.PC_MODE:
-        sim_tds = _simular_leitura(0, 2000) # ADC raw (0-65535, mas faixa típica)
-        #print(f"[{utils.agora()}] [PC_MODE] TDS ADC simulado: {sim_tds}")
-        return sim_tds
-
+    """Lê o valor bruto do ADC para TDS."""
+    # A simulação PC_MODE foi removida.
     if not adc_tds:
+        print(f"[{utils.agora()}] Sensor de TDS (ADC) não inicializado.")
         return None
     try:
         return adc_tds.read_u16()
@@ -230,16 +203,13 @@ def _processar_leituras_sensor(leituras_func, nome_sensor, num_leituras, interva
         valor = leituras_func()
         if valor is not None:
             leituras_coletadas.append(valor)
-            if config.DEBUG_MODE and config.PC_MODE: # Log mais verboso para simulação
-                 print(f"[{utils.agora()}] {nome_sensor} [PC_MODE] Leitura {i+1}/{num_leituras}: {valor}")
-            elif config.DEBUG_MODE:
+            if config.DEBUG_MODE: # PC_MODE foi removido do log
                  print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: {valor:.2f}" if isinstance(valor, float) else f"{valor}")
         else:
             if config.DEBUG_MODE:
                 print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: Falha")
 
-        # Mesmo em PC_MODE, o intervalo de leitura pode ser útil para simular o tempo real
-        time.sleep(intervalo_leitura_s if not config.PC_MODE else 0.01) # Intervalo menor em PC_MODE para acelerar
+        time.sleep(intervalo_leitura_s) # PC_MODE foi removido, usa sempre o intervalo real
 
     if not leituras_coletadas:
         print(f"[{utils.agora()}] {nome_sensor}: Nenhuma leitura bem-sucedida.")
@@ -320,61 +290,152 @@ def ler_todos_sensores():
     dados = {}
 
     # Temperatura
-    # Para temperatura, arredondar para 1 casa decimal antes da moda pode ser útil
-    if ds_sensor or config.PC_MODE: # Inclui PC_MODE para que a simulação ocorra
+    # A condição 'or config.PC_MODE' é removida.
+    if ds_sensor:
         dados["temperatura"] = _processar_leituras_sensor(
             leituras_func=ler_temperatura_ds18b20,
             nome_sensor="Temperatura",
-            num_leituras=config.NUM_LEITURAS,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TEMP,
+            num_leituras=config.NUM_LEITURAS_TEMP,
+            intervalo_leitura_s=config.INTERVALO_LEITURA_TEMP_S,
             limite_outlier_percent=config.LIMITE_OUTLIER_TEMP,
-            casas_decimais_moda=1 # Arredonda temps para 1 decimal (ex: 23.5, 23.6)
+            casas_decimais_moda=1
         )
     else:
         dados["temperatura"] = None
+        if config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
+
 
     # Distância
-    # Para distância, talvez 0 ou 1 casa decimal.
-    if hcsr04_sensor_pins or config.PC_MODE:
+    if hcsr04_sensor_pins:
         dados["distancia"] = _processar_leituras_sensor(
             leituras_func=ler_distancia_hcsr04,
             nome_sensor="Distancia",
-            num_leituras=config.NUM_LEITURAS,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_DIST,
+            num_leituras=config.NUM_LEITURAS_DIST,
+            intervalo_leitura_s=config.INTERVALO_LEITURA_DIST_S,
             limite_outlier_percent=config.LIMITE_OUTLIER_DIST,
-            casas_decimais_moda=0 # Arredonda para inteiro mais próximo
+            casas_decimais_moda=0
         )
     else:
         dados["distancia"] = None
+        if config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
 
-    # Turbidez (valores ADC, geralmente inteiros)
-    if adc_turbidez or config.PC_MODE:
+    # Turbidez
+    if adc_turbidez:
         dados["turbidez"] = _processar_leituras_sensor(
             leituras_func=ler_turbidez_adc,
             nome_sensor="Turbidez",
-            num_leituras=config.NUM_LEITURAS,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TURB,
+            num_leituras=config.NUM_LEITURAS_TURB,
+            intervalo_leitura_s=config.INTERVALO_LEITURA_TURB_S,
             limite_outlier_percent=config.LIMITE_OUTLIER_TURB,
-            casas_decimais_moda=None # ADC são inteiros, não arredondar
+            casas_decimais_moda=None
         )
     else:
         dados["turbidez"] = None
+        if config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
 
-    # TDS (valores ADC, geralmente inteiros)
-    if adc_tds or config.PC_MODE:
+    # TDS
+    if adc_tds:
         dados["tds"] = _processar_leituras_sensor(
             leituras_func=ler_tds_adc,
             nome_sensor="TDS",
-            num_leituras=config.NUM_LEITURAS,
-            intervalo_leitura_s=config.INTERVALO_LEITURA_TDS,
+            num_leituras=config.NUM_LEITURAS_TDS,
+            intervalo_leitura_s=config.INTERVALO_LEITURA_TDS_S,
             limite_outlier_percent=config.LIMITE_OUTLIER_TDS,
-            casas_decimais_moda=None # ADC são inteiros, não arredondar
+            casas_decimais_moda=None
         )
     else:
         dados["tds"] = None
+        if config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
 
     print(f"[{utils.agora()}] Dados finais dos sensores (Moda/Média): {dados}")
     return dados
+
+# --- Nova Função para Leitura de Sensor Específico ---
+def ler_sensor_especifico(nome_do_sensor: str):
+    """
+    Lê um sensor específico com base no nome fornecido, usando suas configurações dedicadas.
+    Retorna um dicionário com o dado do sensor ou None se o sensor não for encontrado ou falhar.
+    Ex: {"temperatura": 25.5, "unit": "C"}
+    """
+    # Tenta importar led_signals dinamicamente
+    try:
+        import led_signals
+        if hasattr(led_signals, 'sinal_leitura_sensores_em_andamento'):
+            led_signals.sinal_leitura_sensores_em_andamento()
+    except ImportError:
+        pass
+
+    print(f"[{utils.agora()}] Iniciando leitura para o sensor: {nome_do_sensor}")
+    valor_sensor = None
+    unidade = None
+
+    if nome_do_sensor == "temperatura":
+        if ds_sensor:  # PC_MODE removido
+            valor_sensor = _processar_leituras_sensor(
+                leituras_func=ler_temperatura_ds18b20,
+                nome_sensor="Temperatura",
+                num_leituras=config.NUM_LEITURAS_TEMP,
+                intervalo_leitura_s=config.INTERVALO_LEITURA_TEMP_S,
+                limite_outlier_percent=config.LIMITE_OUTLIER_TEMP,
+                casas_decimais_moda=1
+            )
+            unidade = "C"
+        elif config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
+    elif nome_do_sensor == "distancia":
+        if hcsr04_sensor_pins:  # PC_MODE removido
+            valor_sensor = _processar_leituras_sensor(
+                leituras_func=ler_distancia_hcsr04,
+                nome_sensor="Distancia",
+                num_leituras=config.NUM_LEITURAS_DIST,
+                intervalo_leitura_s=config.INTERVALO_LEITURA_DIST_S,
+                limite_outlier_percent=config.LIMITE_OUTLIER_DIST,
+                casas_decimais_moda=0
+            )
+            unidade = "cm"
+        elif config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
+    elif nome_do_sensor == "turbidez":
+        if adc_turbidez:  # PC_MODE removido
+            valor_sensor = _processar_leituras_sensor(
+                leituras_func=ler_turbidez_adc,
+                nome_sensor="Turbidez",
+                num_leituras=config.NUM_LEITURAS_TURB,
+                intervalo_leitura_s=config.INTERVALO_LEITURA_TURB_S,
+                limite_outlier_percent=config.LIMITE_OUTLIER_TURB,
+                casas_decimais_moda=None # ADC raw
+            )
+            unidade = "ADC"
+        elif config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
+    elif nome_do_sensor == "tds":
+        if adc_tds:  # PC_MODE removido
+            valor_sensor = _processar_leituras_sensor(
+                leituras_func=ler_tds_adc,
+                nome_sensor="TDS",
+                num_leituras=config.NUM_LEITURAS_TDS,
+                intervalo_leitura_s=config.INTERVALO_LEITURA_TDS_S,
+                limite_outlier_percent=config.LIMITE_OUTLIER_TDS,
+                casas_decimais_moda=None # ADC raw
+            )
+            unidade = "ADC"
+        elif config.DEBUG_MODE:
+            print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
+    else:
+        print(f"[{utils.agora()}] Sensor '{nome_do_sensor}' desconhecido.")
+        return None
+
+    if valor_sensor is not None:
+        print(f"[{utils.agora()}] Leitura final para {nome_do_sensor}: {valor_sensor} {unidade if unidade else ''}")
+        return {"sensor": nome_do_sensor, "valor": valor_sensor, "unidade": unidade}
+    else:
+        print(f"[{utils.agora()}] Falha ao ler o sensor {nome_do_sensor}.")
+        return None
+
 
 if __name__ == '__main__':
     # Para testar este módulo, certifique-se que config.py e utils.py estão acessíveis
