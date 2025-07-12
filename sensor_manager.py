@@ -4,14 +4,12 @@ import utils
 import machine
 import urandom
 
-# --- Sensor Initialization ---
 ds_sensor = None
 roms = []
 hcsr04_sensor_pins = None
 turbidity_adc = None
 tds_adc = None
 
-# DS18B20 Temperature Sensor
 try:
     import onewire
     import ds18x20
@@ -31,7 +29,6 @@ except Exception as e:
     print(f"[{utils.get_timestamp()}] Error initializing DS18B20 sensor: {e}")
     ds_sensor = None
 
-# HC-SR04 Distance Sensor
 try:
     trigger_pin = machine.Pin(config.HCSR04_TRIGGER_PIN, machine.Pin.OUT)
     echo_pin = machine.Pin(config.HCSR04_ECHO_PIN, machine.Pin.IN)
@@ -41,7 +38,6 @@ except Exception as e:
     print(f"[{utils.get_timestamp()}] Error initializing HC-SR04 sensor: {e}")
     hcsr04_sensor_pins = None
 
-# Turbidity Sensor (ADC)
 try:
     turbidity_adc = machine.ADC(machine.Pin(config.TURBIDITY_ADC_PIN))
     print(f"[{utils.get_timestamp()}] Turbidity ADC sensor initialized on pin {config.TURBIDITY_ADC_PIN}.")
@@ -49,7 +45,6 @@ except Exception as e:
     print(f"[{utils.get_timestamp()}] Error initializing ADC for Turbidity: {e}")
     turbidity_adc = None
 
-# TDS Sensor (ADC)
 try:
     tds_adc = machine.ADC(machine.Pin(config.TDS_ADC_PIN))
     print(f"[{utils.get_timestamp()}] TDS ADC sensor initialized on pin {config.TDS_ADC_PIN}.")
@@ -57,7 +52,6 @@ except Exception as e:
     print(f"[{utils.get_timestamp()}] Error initializing ADC for TDS: {e}")
     tds_adc = None
 
-# --- Statistical Calculation Functions ---
 def _calculate_central_value(readings: list):
     """
     Calculates the value with the minimum sum of absolute distances to all other values.
@@ -65,27 +59,22 @@ def _calculate_central_value(readings: list):
     """
     if not readings:
         return None
-
     min_sum_dist = float('inf')
     central_value = None
-
     for i in range(len(readings)):
         current_sum_dist = 0
         for j in range(len(readings)):
             if i == j:
                 continue
             current_sum_dist += abs(readings[i] - readings[j])
-
         if current_sum_dist < min_sum_dist:
             min_sum_dist = current_sum_dist
             central_value = readings[i]
-
     return central_value
 
-# --- Individual Sensor Reading Functions ---
 def read_temperature_ds18b20():
+    """Reads the temperature from the DS18B20 sensor."""
     if not ds_sensor or not roms:
-        print(f"[{utils.get_timestamp()}] DS18B20 sensor not initialized or not found.")
         return None
     try:
         ds_sensor.convert_temp()
@@ -96,8 +85,8 @@ def read_temperature_ds18b20():
         return None
 
 def read_distance_hcsr04():
+    """Reads the distance from the HC-SR04 sensor."""
     if not hcsr04_sensor_pins:
-        print(f"[{utils.get_timestamp()}] HC-SR04 sensor not initialized.")
         return None
     trigger = hcsr04_sensor_pins["trigger"]
     echo = hcsr04_sensor_pins["echo"]
@@ -119,8 +108,8 @@ def read_distance_hcsr04():
         return None
 
 def read_turbidity_adc():
+    """Reads the raw ADC value for the turbidity sensor."""
     if not turbidity_adc:
-        print(f"[{utils.get_timestamp()}] Turbidity sensor (ADC) not initialized.")
         return None
     try:
         return turbidity_adc.read_u16()
@@ -129,8 +118,8 @@ def read_turbidity_adc():
         return None
 
 def read_tds_adc():
+    """Reads the raw ADC value for the TDS sensor."""
     if not tds_adc:
-        print(f"[{utils.get_timestamp()}] TDS sensor (ADC) not initialized.")
         return None
     try:
         return tds_adc.read_u16()
@@ -138,8 +127,10 @@ def read_tds_adc():
         print(f"[{utils.get_timestamp()}] Error reading TDS ADC: {e}")
         return None
 
-# --- Reading Processing and Filtering Function ---
 def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_interval_s):
+    """
+    Collects multiple readings, processes them using the central value method, and returns the result.
+    """
     if not callable(reading_func):
         print(f"[{utils.get_timestamp()}] {sensor_name}: Reading function is not callable.")
         return None
@@ -151,7 +142,6 @@ def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_in
         value = reading_func()
         if value is not None:
             collected_readings.append(value)
-            # Correctly format the value outside the f-string to avoid syntax errors
             formatted_value = f"{value:.2f}" if isinstance(value, float) else str(value)
             print(f"[{utils.get_timestamp()}] {sensor_name} Reading {i+1}/{num_readings}: {formatted_value}")
         else:
@@ -162,7 +152,6 @@ def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_in
         print(f"[{utils.get_timestamp()}] {sensor_name}: No successful readings.")
         return None
 
-    # New method: Calculate the value with the minimum sum of absolute distances
     final_sensor_value = _calculate_central_value(collected_readings)
 
     if final_sensor_value is None:
@@ -175,7 +164,6 @@ def _process_sensor_readings(reading_func, sensor_name, num_readings, reading_in
 
     return final_sensor_value
 
-# --- Main Public Functions ---
 def read_all_sensors():
     """Reads all configured sensors, applying the central value calculation."""
     try:
@@ -281,20 +269,3 @@ def read_specific_sensor(sensor_name_to_read: str):
     else:
         print(f"[{utils.get_timestamp()}] Failed to read sensor {sensor_name_to_read}.")
         return None
-
-if __name__ == '__main__':
-    print("Testing sensor_manager module...")
-    results = read_all_sensors()
-    print("\n--- Final Test Results ---")
-    if results:
-        for sensor, value in results.items():
-            if value is not None:
-                try:
-                    print(f"Sensor {sensor}: {float(value):.2f}")
-                except (ValueError, TypeError):
-                    print(f"Sensor {sensor}: {value}")
-            else:
-                print(f"Sensor {sensor}: Reading failed or not available")
-    else:
-        print("No sensor data was returned.")
-    print("\nEnd of sensor_manager test.")
