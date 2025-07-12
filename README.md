@@ -1,6 +1,6 @@
 # Monitoring Project with Raspberry Pi Pico W and Micropython
 
-This project uses a Raspberry Pi Pico W programmed in Micropython to collect sensor data and send it to a monitoring system.
+This project uses a Raspberry Pi Pico W programmed in MicroPython to collect sensor data from an ornamental pond and send it to a monitoring system.
 
 ## Features
 
