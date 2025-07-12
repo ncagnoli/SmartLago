@@ -15,15 +15,15 @@ def run_calibration():
 
     print(f"[{utils.get_timestamp()}] Requesting temperature reading from sensor_manager...")
     # The read_specific_sensor function already handles multiple readings and mode calculation.
-    result = sensor_manager.read_specific_sensor("temperature") # Changed to English
+    result = sensor_manager.read_specific_sensor("temperature")
 
-    if result and result.get("value") is not None: # Changed to 'value'
+    if result and result.get("value") is not None:
         print("-" * 30)
         print(f"Sensor Calibration Result: Temperature")
         print("-" * 30)
         print(f"Timestamp: {utils.get_timestamp()}")
         print(f"Sensor Name: {result.get('sensor')}")
-        print(f"Measured Value: {result.get('value'):.2f} {result.get('unit')}") # Changed to 'value' and 'unit'
+        print(f"Measured Value: {result.get('value'):.2f} {result.get('unit')}")
         print("-" * 30)
         print(f"[{utils.get_timestamp()}] Temperature sensor calibration finished.")
     else:
@@ -31,6 +31,5 @@ def run_calibration():
         print("Please check sensor connections and sensor_manager.py initialization.")
 
 if __name__ == "__main__":
-    # A short delay to allow board initialization or for the user to connect a terminal.
     time.sleep(2)
     run_calibration()

@@ -140,13 +140,6 @@ A set of calibration scripts are provided to help test individual sensors and th
 
 To run a calibration script, connect to the device's REPL (e.g., using Thonny or `mpremote`) and execute the desired script. For example:
 
-```bash
-# Using mpremote
-mpremote run calibrate_temperature.py
-```
-
-Or from Thonny, open the file and run it.
-
 Each script will:
 1.  Perform multiple readings for the specific sensor.
 2.  Calculate the mode/mean of these readings.
@@ -163,10 +156,3 @@ This allows for verification of sensor functionality and the accuracy of the rea
 *   Total Dissolved Solids (TDS) Sensor
 *   Resistors and jumpers as needed for connections.
 
-## Next Steps
-
-1.  Implement more robust error handling and Wi-Fi reconnection logic.
-2.  Add more unit and integration tests.
-3.  Explore converting ADC values for Turbidity and TDS to more meaningful units (e.g., NTU, ppm), if applicable and with proper calibration.
-4.  Optimize power consumption for battery-powered scenarios.
-5.  Add new features as needed.

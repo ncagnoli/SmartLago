@@ -132,12 +132,8 @@ def handle_tds_request():
     result = sensor_manager.read_specific_sensor("tds")
     return { "tds": result.get("value") } if result and result.get("value") is not None else None
 
-def handle_all_sensors_request():
-    return sensor_manager.read_all_sensors()
-
 # --- Route Registration ---
 route_handlers["/temperature"] = handle_temperature_request
 route_handlers["/distance"] = handle_distance_request
 route_handlers["/turbidity"] = handle_turbidity_request
 route_handlers["/tds"] = handle_tds_request
-route_handlers["/all_sensors"] = handle_all_sensors_request
