@@ -73,8 +73,7 @@ def handle_request(request_data, conn):
         conn.sendall(response)
         return
 
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_SERVER] Received {method} for {path}")
+    print(f"[{utils.agora()}] [HTTP_SERVER] Received {method} for {path}")
 
     handler = route_handlers.get(path)
 
@@ -144,13 +143,11 @@ def start_server():
             addr_client_str = f"{addr_client[0]}:{addr_client[1]}"
             client_conn.settimeout(config.HTTP_CLIENT_TIMEOUT_S)
 
-            if config.DEBUG_MODE:
-                print(f"[{utils.agora()}] [HTTP_SERVER] Connection from {addr_client_str}")
+            print(f"[{utils.agora()}] [HTTP_SERVER] Connection from {addr_client_str}")
 
             request_bytes = client_conn.recv(config.HTTP_MAX_REQUEST_SIZE)
             if not request_bytes:
-                if config.DEBUG_MODE:
-                    print(f"[{utils.agora()}] [HTTP_SERVER] Connection from {addr_client_str} closed without data.")
+                print(f"[{utils.agora()}] [HTTP_SERVER] Connection from {addr_client_str} closed without data.")
             else:
                 request_data_str = ""
                 try:
@@ -180,7 +177,9 @@ def start_server():
             if client_conn:
                 try:
                     client_conn.close()
-                    if config.DEBUG_MODE and addr_client_str != "unknown client":
+                    # Evita log para clientes desconhecidos que podem não ter realmente conectado
+                    # ou para casos onde addr_client_str não foi definido devido a um erro anterior.
+                    if addr_client_str != "unknown client":
                         print(f"[{utils.agora()}] [HTTP_SERVER] Connection with {addr_client_str} closed.")
                 except Exception as e_close:
                     print(f"[{utils.agora()}] [HTTP_SERVER] Error closing connection with {addr_client_str}: {e_close}")
@@ -190,27 +189,22 @@ def start_server():
 # --- Route Handlers ---
 def handle_temperatura_request():
     """Handler para o endpoint /temperatura."""
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_HANDLER] /temperatura solicitado.")
-    # sensor_manager.ler_sensor_especifico já retorna o dict no formato desejado ou None
+    print(f"[{utils.agora()}] [HTTP_HANDLER] /temperatura solicitado.")
     return sensor_manager.ler_sensor_especifico("temperatura")
 
 def handle_distancia_request():
     """Handler para o endpoint /distancia."""
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_HANDLER] /distancia solicitado.")
+    print(f"[{utils.agora()}] [HTTP_HANDLER] /distancia solicitado.")
     return sensor_manager.ler_sensor_especifico("distancia")
 
 def handle_turbidez_request():
     """Handler para o endpoint /turbidez."""
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_HANDLER] /turbidez solicitado.")
+    print(f"[{utils.agora()}] [HTTP_HANDLER] /turbidez solicitado.")
     return sensor_manager.ler_sensor_especifico("turbidez")
 
 def handle_tds_request():
     """Handler para o endpoint /tds."""
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_HANDLER] /tds solicitado.")
+    print(f"[{utils.agora()}] [HTTP_HANDLER] /tds solicitado.")
     return sensor_manager.ler_sensor_especifico("tds")
 
 def handle_todos_sensores_request():
@@ -218,8 +212,7 @@ def handle_todos_sensores_request():
     Handler para o endpoint /todos_sensores.
     Retorna um dicionário com as leituras de todos os sensores.
     """
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] [HTTP_HANDLER] /todos_sensores solicitado.")
+    print(f"[{utils.agora()}] [HTTP_HANDLER] /todos_sensores solicitado.")
     # sensor_manager.ler_todos_sensores() retorna um dict como {"temperatura": X, "distancia": Y, ...}
     # ou um dict com valores None se alguma leitura falhar.
     # O servidor HTTP já trata o caso de o handler retornar None (erro 500),

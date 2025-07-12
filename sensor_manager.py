@@ -196,20 +196,17 @@ def _processar_leituras_sensor(leituras_func, nome_sensor, num_leituras, interva
         return None
 
     leituras_coletadas = []
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] {nome_sensor}: Iniciando {num_leituras} leituras com intervalo de {intervalo_leitura_s}s...")
+    print(f"[{utils.agora()}] {nome_sensor}: Iniciando {num_leituras} leituras com intervalo de {intervalo_leitura_s}s...")
 
     for i in range(num_leituras):
         valor = leituras_func()
         if valor is not None:
             leituras_coletadas.append(valor)
-            if config.DEBUG_MODE: # PC_MODE foi removido do log
-                 print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: {valor:.2f}" if isinstance(valor, float) else f"{valor}")
+            print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: {valor:.2f}" if isinstance(valor, float) else f"{valor}")
         else:
-            if config.DEBUG_MODE:
-                print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: Falha")
+            print(f"[{utils.agora()}] {nome_sensor} Leitura {i+1}/{num_leituras}: Falha")
 
-        time.sleep(intervalo_leitura_s) # PC_MODE foi removido, usa sempre o intervalo real
+        time.sleep(intervalo_leitura_s)
 
     if not leituras_coletadas:
         print(f"[{utils.agora()}] {nome_sensor}: Nenhuma leitura bem-sucedida.")
@@ -233,8 +230,7 @@ def _processar_leituras_sensor(leituras_func, nome_sensor, num_leituras, interva
                  pass # Depende do que se espera quando a média é zero.
 
             if is_outlier:
-                if config.DEBUG_MODE:
-                    print(f"[{utils.agora()}] {nome_sensor}: valor {v} descartado como outlier (média bruta {media_bruta:.2f}).")
+                print(f"[{utils.agora()}] {nome_sensor}: valor {v} descartado como outlier (média bruta {media_bruta:.2f}).")
             else:
                 leituras_filtradas.append(v)
     else: # Sem filtragem de outlier
@@ -250,24 +246,20 @@ def _processar_leituras_sensor(leituras_func, nome_sensor, num_leituras, interva
     valor_final_sensor = _calcular_moda(leituras_filtradas, округление_до_casas_decimais=casas_decimais_moda)
 
     if valor_final_sensor is None:
-        if config.DEBUG_MODE:
-            print(f"[{utils.agora()}] {nome_sensor}: Nenhuma moda clara encontrada nas leituras filtradas. Usando média como fallback.")
+        print(f"[{utils.agora()}] {nome_sensor}: Nenhuma moda clara encontrada nas leituras filtradas. Usando média como fallback.")
         # Fallback para média se a moda não for clara
         if leituras_filtradas: # Garante que há algo para calcular a média
              valor_final_sensor = sum(leituras_filtradas) / len(leituras_filtradas)
         else: # Isso não deveria acontecer se a verificação anterior de not leituras_filtradas funcionou
              return None
 
-
-    if config.DEBUG_MODE:
-        print(f"[{utils.agora()}] {nome_sensor}: Leituras originais ({len(leituras_coletadas)}): {leituras_coletadas}")
-        print(f"[{utils.agora()}] {nome_sensor}: Média bruta: {media_bruta:.2f}")
-        print(f"[{utils.agora()}] {nome_sensor}: Leituras filtradas ({len(leituras_filtradas)}): {leituras_filtradas}")
-        if isinstance(valor_final_sensor, float):
-            print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor:.2f}")
-        else:
-            print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor}")
-
+    print(f"[{utils.agora()}] {nome_sensor}: Leituras originais ({len(leituras_coletadas)}): {leituras_coletadas}")
+    print(f"[{utils.agora()}] {nome_sensor}: Média bruta: {media_bruta:.2f}")
+    print(f"[{utils.agora()}] {nome_sensor}: Leituras filtradas ({len(leituras_filtradas)}): {leituras_filtradas}")
+    if isinstance(valor_final_sensor, float):
+        print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor:.2f}")
+    else:
+        print(f"[{utils.agora()}] {nome_sensor}: Valor final (Moda/Média fallback): {valor_final_sensor}")
 
     return valor_final_sensor
 
@@ -302,8 +294,7 @@ def ler_todos_sensores():
         )
     else:
         dados["temperatura"] = None
-        if config.DEBUG_MODE:
-            print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
+        print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
 
 
     # Distância
@@ -318,8 +309,7 @@ def ler_todos_sensores():
         )
     else:
         dados["distancia"] = None
-        if config.DEBUG_MODE:
-            print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
+        print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
 
     # Turbidez
     if adc_turbidez:
@@ -333,8 +323,7 @@ def ler_todos_sensores():
         )
     else:
         dados["turbidez"] = None
-        if config.DEBUG_MODE:
-            print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
+        print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
 
     # TDS
     if adc_tds:
@@ -348,8 +337,7 @@ def ler_todos_sensores():
         )
     else:
         dados["tds"] = None
-        if config.DEBUG_MODE:
-            print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
+        print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
 
     print(f"[{utils.agora()}] Dados finais dos sensores (Moda/Média): {dados}")
     return dados
@@ -384,10 +372,10 @@ def ler_sensor_especifico(nome_do_sensor: str):
                 casas_decimais_moda=1
             )
             unidade = "C"
-        elif config.DEBUG_MODE:
+        else: # Sensor não inicializado
             print(f"[{utils.agora()}] Leitura de Temperatura pulada (sensor não inicializado).")
     elif nome_do_sensor == "distancia":
-        if hcsr04_sensor_pins:  # PC_MODE removido
+        if hcsr04_sensor_pins:
             valor_sensor = _processar_leituras_sensor(
                 leituras_func=ler_distancia_hcsr04,
                 nome_sensor="Distancia",
@@ -397,10 +385,10 @@ def ler_sensor_especifico(nome_do_sensor: str):
                 casas_decimais_moda=0
             )
             unidade = "cm"
-        elif config.DEBUG_MODE:
+        else: # Sensor não inicializado
             print(f"[{utils.agora()}] Leitura de Distância pulada (sensor não inicializado).")
     elif nome_do_sensor == "turbidez":
-        if adc_turbidez:  # PC_MODE removido
+        if adc_turbidez:
             valor_sensor = _processar_leituras_sensor(
                 leituras_func=ler_turbidez_adc,
                 nome_sensor="Turbidez",
@@ -410,10 +398,10 @@ def ler_sensor_especifico(nome_do_sensor: str):
                 casas_decimais_moda=None # ADC raw
             )
             unidade = "ADC"
-        elif config.DEBUG_MODE:
+        else: # Sensor não inicializado
             print(f"[{utils.agora()}] Leitura de Turbidez pulada (sensor não inicializado).")
     elif nome_do_sensor == "tds":
-        if adc_tds:  # PC_MODE removido
+        if adc_tds:
             valor_sensor = _processar_leituras_sensor(
                 leituras_func=ler_tds_adc,
                 nome_sensor="TDS",
@@ -423,7 +411,7 @@ def ler_sensor_especifico(nome_do_sensor: str):
                 casas_decimais_moda=None # ADC raw
             )
             unidade = "ADC"
-        elif config.DEBUG_MODE:
+        else: # Sensor não inicializado
             print(f"[{utils.agora()}] Leitura de TDS pulada (sensor não inicializado).")
     else:
         print(f"[{utils.agora()}] Sensor '{nome_do_sensor}' desconhecido.")
