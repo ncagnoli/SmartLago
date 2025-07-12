@@ -80,8 +80,8 @@ def handle_request(request_data, conn):
     if handler:
         if method == "GET":
             try:
-                response_data = handler() # This will now be a simple dict for individual sensors or the full dict for all_sensors
-                if response_data is None: # Handles cases where sensor reading failed critically
+                response_data = handler()
+                if response_data is None:
                     response_body_json = '{"error": "Failed to read sensor or no data"}'
                     response = build_http_response(response_body_json, status_code=500)
                 else:
@@ -211,19 +211,19 @@ def handle_tds_request():
 
 def handle_all_sensors_request():
     """
-    Handler for the /todos_sensores endpoint.
+    Handler for the /all_sensors endpoint.
     Returns a dictionary with readings from all sensors.
     This endpoint will retain its existing structure with multiple sensor values.
     """
-    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /todos_sensores requested.")
+    print(f"[{utils.get_timestamp()}] [HTTP_HANDLER] /all_sensors requested.")
     return sensor_manager.read_all_sensors()
 
 # Register route handlers
-route_handlers["/temperatura"] = handle_temperatura_request
-route_handlers["/distancia"] = handle_distancia_request
-route_handlers["/turbidez"] = handle_turbidez_request
+route_handlers["/temperature"] = handle_temperature_request
+route_handlers["/distance"] = handle_distance_request
+route_handlers["/turbidity"] = handle_turbidity_request
 route_handlers["/tds"] = handle_tds_request
-route_handlers["/todos_sensores"] = handle_todos_sensores_request
+route_handlers["/all_sensors"] = handle_all_sensors_request
 
 
 if __name__ == "__main__":
@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
     if not wifi_manager.is_connected():
         print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Wi-Fi not connected. Attempting to connect...")
-        if not wifi_manager.connect_wifi(config.SSID, config.SENHA):
+        if not wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD):
             print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Failed to connect to Wi-Fi. Aborting server test.")
         else:
             print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Wi-Fi connected: {wifi_manager.get_ip()}")
@@ -250,8 +250,8 @@ if __name__ == "__main__":
         print(f"[{utils.get_timestamp()}] [HTTP_SERVER_TEST] Access test endpoints:")
         print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/test")
         print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/sensor_example")
-        print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/temperatura")
-        print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/todos_sensores")
+        print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/temperature")
+        print(f"  http://{wifi_manager.get_ip()}:{config.HTTP_PORT}/all_sensors")
 
 
         if not start_server():
