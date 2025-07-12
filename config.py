@@ -59,9 +59,8 @@ PIN_TDS_ADC = 27 # ADC1 - Exemplo, ajustar se necessário
 ARQUIVO_FALHAS_LOG = "falhas.log"
 # ARQUIVO_CACHE_DADOS não é mais necessário com a remoção do Zabbix e sua lógica de cache
 
-# === Debugging ===
-DEBUG_MODE = True # Ativa/desativa mensagens de debug adicionais
 # PC_MODE foi removido. O código agora assume que está rodando em hardware MicroPython.
+# DEBUG_MODE foi removido. Os logs de debug agora são sempre ativos.
 
 print("Configurações carregadas de config.py")
 # A lógica condicional para PC_MODE foi removida.
