@@ -85,24 +85,32 @@ The HTTP server exposes the following endpoints for querying sensor data. All en
     }
     ```
 
-### `/all_sensors`
+### `/status`
 
 *   **Method:** `GET`
-*   **Description:** Returns the current readings from all configured sensors.
+*   **Description:** Returns the operational status of the device.
 *   **Response (Success - 200 OK):**
     ```json
     {
-      "temperature": 25.5,
-      "distance": 10.2,
-      "turbidity": 3000,
-      "tds": 1500
+      "status": "ok"
     }
     ```
-    *Note: If reading a specific sensor fails, its value in the JSON will be `null`.*
-*   **Response (Error - 500 Internal Server Error):** In case of a critical failure when trying to read sensors (rare, as individual failures are handled with `null`).
+
+### `/hardreset`
+
+*   **Method:** `POST`
+*   **Description:** Triggers a hardware reset of the device. Requires a password for authentication.
+*   **Request Body (Success - 200 OK):**
     ```json
     {
-      "error": "Failed to read sensor or no data"
+      "password": "your_secret_password"
+    }
+    ```
+*   **Response (Error - 500 Internal Server Error):**
+    ```json
+    {
+      "status": "ok",
+      "message": "Device is resetting"
     }
     ```
 
