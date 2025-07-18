@@ -1,3 +1,18 @@
+# --- Endpoints Documentation ---
+#
+# GET /status
+#   Returns the operational status of the device.
+#   Response:
+#     {"status": "ok"}
+#
+# POST /hardreset
+#   Triggers a hardware reset of the device.
+#   Request Body (application/json):
+#     {"password": "your_secret_password"}
+#   Response:
+#     {"status": "ok", "message": "Device is resetting"}
+#
+# ---
 import socket
 import time
 import config
@@ -32,7 +47,14 @@ def handle_request(request_data, conn):
     Processes the received HTTP request, identifies the route, and calls the appropriate handler.
     """
     try:
-        request_lines = request_data.splitlines()
+        header_end_index = request_data.find('\r\n\r\n')
+        if header_end_index == -1:
+            raise ValueError("Invalid HTTP headers")
+
+        header_str = request_data[:header_end_index]
+        body_str = request_data[header_end_index + 4:]
+
+        request_lines = header_str.split('\r\n')
         if not request_lines:
             raise ValueError("Empty request")
 
@@ -42,30 +64,38 @@ def handle_request(request_data, conn):
             raise ValueError("Malformed request line")
 
         method, path = parts[0], parts[1]
+
     except ValueError as e:
-        print(f"[{utils.get_timestamp()}] [HTTP_SERVER] Error parsing request line: {e}")
-        response_body = '{"error": "Bad Request", "detail": "Malformed request line"}'
+        print(f"[{utils.get_timestamp()}] [HTTP_SERVER] Error parsing request: {e}")
+        response_body = '{"error": "Bad Request", "detail": "Malformed request"}'
         response = build_http_response(response_body, status_code=400)
         conn.sendall(response)
         return
 
     print(f"[{utils.get_timestamp()}] [HTTP_SERVER] Received {method} for {path}")
 
-    handler = route_handlers.get(path)
+    handler, allowed_methods = route_handlers.get(path, (None, []))
 
     if handler:
-        if method == "GET":
+        if method in allowed_methods:
             try:
-                response_data = handler()
+                if method == "POST":
+                    # For POST, pass the body to the handler
+                    response_data = handler(body_str)
+                else:
+                    # For GET, call handler without arguments
+                    response_data = handler()
+
                 if response_data is None:
-                    response_body_json = '{"error": "Failed to read sensor or no data"}'
+                    response_body_json = '{"error": "No data or failed operation"}'
                     response = build_http_response(response_body_json, status_code=500)
                 else:
                     response_body_json = json.dumps(response_data)
                     response = build_http_response(response_body_json)
+
             except Exception as e:
                 print(f"[{utils.get_timestamp()}] [HTTP_SERVER] Error in handler for {path}: {e}")
-                response_body_json = '{"error": "Internal Server Error", "detail": str(e)}'
+                response_body_json = f'{{"error": "Internal Server Error", "detail": "{str(e)}"}}'
                 response = build_http_response(response_body_json, status_code=500)
         else:
             response_body_json = '{"error": "Method Not Allowed"}'
@@ -116,6 +146,12 @@ def start_server():
                 client_conn.close()
 
 # --- Route Handlers ---
+def handle_status_request():
+    """
+    Handles requests to the /status endpoint, returning a simple OK message.
+    """
+    return {"status": "ok"}
+
 def handle_temperature_request():
     result = sensor_manager.read_specific_sensor("temperature")
     return { "temperature": result.get("value") } if result and result.get("value") is not None else None
@@ -132,8 +168,30 @@ def handle_tds_request():
     result = sensor_manager.read_specific_sensor("tds")
     return { "tds": result.get("value") } if result and result.get("value") is not None else None
 
+def handle_hard_reset_request(request_body):
+    """
+    Handles requests to the /hardreset endpoint.
+    Requires a POST request with a JSON body containing the correct password.
+    """
+    try:
+        data = json.loads(request_body)
+        password = data.get("password")
+    except json.JSONDecodeError:
+        raise ValueError("Invalid JSON")
+
+    if password == config.HARD_RESET_PASSWORD:
+        utils.hard_reset()
+        return {"status": "ok", "message": "Device is resetting"}
+    else:
+        # Note: In a real-world scenario, you might want to handle this more securely
+        # to prevent timing attacks, but for this context, it's acceptable.
+        raise ValueError("Unauthorized")
+
 # --- Route Registration ---
-route_handlers["/temperature"] = handle_temperature_request
-route_handlers["/distance"] = handle_distance_request
-route_handlers["/turbidity"] = handle_turbidity_request
-route_handlers["/tds"] = handle_tds_request
+# Each route is a tuple of (handler_function, allowed_methods)
+route_handlers["/status"] = (handle_status_request, ["GET"])
+route_handlers["/temperature"] = (handle_temperature_request, ["GET"])
+route_handlers["/distance"] = (handle_distance_request, ["GET"])
+route_handlers["/turbidity"] = (handle_turbidity_request, ["GET"])
+route_handlers["/tds"] = (handle_tds_request, ["GET"])
+route_handlers["/hardreset"] = (handle_hard_reset_request, ["POST"])
