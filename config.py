@@ -33,4 +33,8 @@ HCSR04_ECHO_PIN = 19
 TURBIDITY_ADC_PIN = 26
 TDS_ADC_PIN = 27
 
+# === Hardware Reset Settings ===
+HARD_RESET_PASSWORD = "your_secret_password"
+
+
 print("Configurations loaded from config.py")
